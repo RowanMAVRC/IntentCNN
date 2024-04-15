@@ -25,7 +25,7 @@ preparation, model training, to making predictions in a domain-specific applicat
 # This needs to be done before other imports
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 import torch
 import numpy as np
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     print(f'Weight Decay: {weight_decay}')
     print(f'Project Name: {project_name}')
     print(f'Run Name: {run_name}')
-    
+
     # Load dataset
     flight_data, flight_labels, id2label, label2id = load_flight_data(data_dir, labels_path)
     # flight_data, flight_labels, id2label, label2id = load_flight_data_XY(data_dir, labels_path)

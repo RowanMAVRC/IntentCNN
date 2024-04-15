@@ -26,6 +26,7 @@ import cv2  # OpenCV library for video processing
 import numpy as np  # NumPy library for numerical operations
 import pandas as pd  # Pandas library for data manipulation
 from tqdm import tqdm  # tqdm library for progress bars
+import matplotlib.pyplot as plt
 
 #-----------------------------------------------------------------------------#
 # Functions
@@ -66,10 +67,12 @@ def find_matching_pairs(data_path):
 if __name__ == "__main__":
 
     # Extract paths from the parsed arguments
-    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H"
-    # save_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
-    data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H"
-    save_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
+    data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H"
+    save_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
+    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H"
+    # save_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
+    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H"
+    # save_path = '/data/TGSSE/UpdatedIntentions/095823.pickle'
 
     # Replace 'data_path' with the path to your dataset directory
     matching_pairs = find_matching_pairs(data_path)
@@ -132,21 +135,64 @@ if __name__ == "__main__":
                 sequences[key] = sequence_list
 
     print(sequences)
-    # Calculate sequence statistics
-    sequence_lengths = [len(seq) for seq_list in sequences.values() for seq in seq_list]
-    longest_sequence = max(sequence_lengths)
-    shortest_sequence = min(sequence_lengths)
-    average_sequence_length = sum(sequence_lengths) / len(sequence_lengths)
+    # Calculate overall statistics
+    sequence_lengths_all = [len(seq) for seq_list in sequences.values() for seq in seq_list]
+    longest_sequence_all = max(sequence_lengths_all)
+    shortest_sequence_all = min(sequence_lengths_all)
+    average_sequence_length_all = sum(sequence_lengths_all) / len(sequence_lengths_all)
 
-    # Print out the results
-    print("Longest sequence length:", longest_sequence)
-    print("Shortest sequence length:", shortest_sequence)
-    print("Average sequence length:", average_sequence_length)
+    # Calculate statistics for each intention group
+    intention_stats = {}
+    for key, seq_list in sequences.items():
+        intention = key[1]
+        seq_lengths = [len(seq) for seq in seq_list]
+        longest_seq = max(seq_lengths)
+        shortest_seq = min(seq_lengths)
+        avg_seq_length = sum(seq_lengths) / len(seq_lengths)
+        intention_stats[intention] = {
+            'longest': longest_seq,
+            'shortest': shortest_seq,
+            'average': avg_seq_length
+        }
+
+    # Extract the base name of the input file
+    input_file_name = os.path.basename(data_path)
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+
+    # Plot statistics for each intention group
+    intention_labels = list(intention_stats.keys())
+    longest_values = [intention_stats[intention]['longest'] for intention in intention_labels]
+    shortest_values = [intention_stats[intention]['shortest'] for intention in intention_labels]
+    average_values = [intention_stats[intention]['average'] for intention in intention_labels]
+
+    bar_width = 0.2
+    index = range(len(intention_labels))
+    plt.bar([i - bar_width for i in index], longest_values, bar_width, color='orange', label='Longest')
+    plt.bar(index, shortest_values, bar_width, color='green', label='Shortest')
+    plt.bar([i + bar_width for i in index], average_values, bar_width, color='red', label='Average')
+
+    # Annotate each bar with its value
+    for i, v in enumerate(longest_values):
+        plt.text(i - bar_width, v + 0.1, str(v), ha='center', va='bottom')
+    for i, v in enumerate(shortest_values):
+        plt.text(i, v + 0.1, str(v), ha='center', va='bottom')
+    for i, v in enumerate(average_values):
+        plt.text(i + bar_width, v + 0.1, str(round(v, 2)), ha='center', va='bottom')
+
+    # Annotate the plot with the input file name
+    plt.text(0.5, -0.12, f'Input File: {input_file_name}', transform=plt.gca().transAxes, fontsize=10, ha='center')
+
+    plt.xlabel('Statistics')
+    plt.ylabel('Sequence Length')
+    plt.title('Sequence Length Statistics')
+    plt.xticks(index, intention_labels)
+    plt.legend()
+
+    # Save the chart to a file
+    output_file = 'sequence_statistics.png'
+    plt.savefig(output_file)
     
     with open(save_path, 'wb') as handle:
         pickle.dump(sequences, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    
-        
-        
-    

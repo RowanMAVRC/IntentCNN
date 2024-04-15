@@ -1,0 +1,30 @@
+1. Detection Weights
+/data/TGSSE/weights/detection/DyVir_exp2.pt
+/data/TGSSE/weights/detection/ijcnn_full_vr_set_experiment-0_best.pt
+/data/TGSSE/weights/detection/DyViR_Combined.pt
+
+2. Intention Weights
+/data/TGSSE/weights/intention/IntentFormer/
+
+3. IJCNN 2023 Videos
+## 1 Drone
+data/TGSSE/IJCNN 2023/1 Drone/SimData_2023-01-06__12-43-28.mp4
+## 1 Plane
+/data/TGSSE/IJCNN 2023/1 Plane/SimData_2023-01-06__12-45-26.mp4
+## 2 Drones 2 Planes
+/data/TGSSE/IJCNN 2023/2 Drones 2 Planes/100k/SimData_2023-01-06__18-32-55.mp4
+## 5 Drones Planes
+data/TGSSE/IJCNN 2023/5 Drones 5 Planes/SimData_2023-01-06__13-14-58.mp4
+## Experimental (1 Drone) 3 mins
+/data/TGSSE/IJCNN 2023/Experimental/3 Minute Version/SimData_2023-01-06__12-29-52.mp4
+
+4. DyVir Videos
+/data/TGSSE/DyViR Conference Paper 2024/
+/data/TGSSE/DyViR Conference Paper 2024/Same POV Multi-Modality (300k)/SimData_2024-03-17__11-53-42_Optical/SimData_2024-03-17__11-53-42_Optical.mp4
+/data/TGSSE/DyViR Conference Paper 2024/Changing Intentions (10k)/SimData_2024-03-17__22-17-01_Optical/SimData_2024-03-17__22-17-01_Optical.mp4
+
+4. Trajectory Data
+/data/TGSSE/DyViR Conference Paper 2024/
+/data/TGSSE/DyViR Conference Paper 2024/Same POV Multi-Modality (300k)/SimData_2024-03-17__11-53-42_Optical/trajectory_with_intentions_750_padding_SimData_2024-03-17__11-53-42_Optical.pt
+/data/TGSSE/DyViR Conference Paper 2024/Same POV Multi-Modality (300k)/SimData_2024-03-17__11-53-42_Optical/trajectory_with_intentions_750_padding_SimData_2024-03-17__11-53-42_Optical.yaml
+

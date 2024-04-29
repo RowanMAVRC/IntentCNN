@@ -25,12 +25,13 @@ preparation, model training, to making predictions in a domain-specific applicat
 # This needs to be done before other imports
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import torch
 import numpy as np
 import yaml
 import evaluate
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from transformers import (
     MobileBertForSequenceClassification,
@@ -40,9 +41,10 @@ from transformers import (
     DataCollatorWithPadding
 )
 from sklearn.model_selection import KFold
-from data_tools.normalization import z_score_standardization, z_score_2d
+from data_tools.normalization import z_score_standardization, z_score_2d, z_test
 import argparse
 import wandb
+from data_tools.chart_generator import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -77,9 +79,10 @@ def load_flight_data(data_dir, labels_path):
     # Extract labels from trajectories
     train_labels = [int(trajectory[0][0]) for trajectory in train_trajectories]
     train_trajectories = np.delete(train_trajectories, 0, axis=2)
-
+    print(f"Train Trajectories Shape: {train_trajectories.shape}")
     # Normalize the training trajectories
     train_trajectories = z_score_standardization(train_trajectories)
+    # train_trajectories = z_test(train_trajectories)
 
     # Create a map of the expected ids to their labels with `id2label` and `label2id`
     with open(labels_path, "r") as stream:
@@ -156,6 +159,8 @@ def compute_metrics(eval_pred):
     """
     logits, labels = eval_pred.predictions, eval_pred.label_ids
     predictions = np.argmax(logits, axis=-1)
+    new_df['pred_label'] = predictions
+    new_df['true_label'] = val_labels
     return {"accuracy": (predictions == labels).mean()}
 
 # ------------------------------------------------------------------------------------- #
@@ -199,12 +204,14 @@ if __name__ == "__main__":
     print(f'Weight Decay: {weight_decay}')
     print(f'Project Name: {project_name}')
     print(f'Run Name: {run_name}')
-
+    # data_dir = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/"
+    # labels_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
     # Load dataset
     flight_data, flight_labels, id2label, label2id = load_flight_data(data_dir, labels_path)
     # flight_data, flight_labels, id2label, label2id = load_flight_data_XY(data_dir, labels_path)
     num_labels = len(id2label)
-    
+    # Generate charts for the entire flight data
+    generate_histogram_and_pie_chart(flight_labels, id2label, f'Overall_{run_name}')
     # Initialize KFold
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     
@@ -212,14 +219,18 @@ if __name__ == "__main__":
     for fold_idx, (train_index, val_index) in enumerate(kf.split(flight_data)):
         # Create output directory
         output_dir = f"./results/{project_name}/{run_name}_Fold{fold_idx}"
-        
+        new_df = pd.DataFrame()
         # Initialize a new wandb run for each fold
         wandb.init(project=project_name, name=f"{run_name}_Fold{fold_idx}")
 
         # Split data into train and validation sets
         train_trajectories, val_trajectories = flight_data[train_index], flight_data[val_index]
         train_labels, val_labels = np.array(flight_labels)[train_index], np.array(flight_labels)[val_index]
-
+        
+        # Generate charts for the split
+        generate_histogram_and_pie_chart_for_split(train_labels, val_labels, id2label, f'{run_name}_Fold{fold_idx}')
+        wandb.log({"Overall Distribution": wandb.Image(f'Overall_{run_name}_overall_distribution.png')})
+        wandb.log({"Split Distribution": wandb.Image(f'{run_name}_Fold{fold_idx}_split_distribution.png')})
         # Convert to Hugging Face datasets
         train_ds = Dataset.from_dict({"trajectory": train_trajectories.tolist(), "labels": train_labels})
         val_ds = Dataset.from_dict({"trajectory": val_trajectories.tolist(), "labels": val_labels})
@@ -254,6 +265,7 @@ if __name__ == "__main__":
             save_strategy="epoch",
             load_best_model_at_end=True,
             push_to_hub=False,
+            logging_strategy="epoch",
         )
 
         # Trainer setup
@@ -268,7 +280,9 @@ if __name__ == "__main__":
         )
 
         # Train the model
-        trainer.train()
+        results = trainer.train()
+        my_table = wandb.Table(dataframe=new_df)
+        wandb.log({f"Predictions for {run_name}_Fold{fold_idx}": my_table})
         
         # End the current wandb run
         wandb.finish()

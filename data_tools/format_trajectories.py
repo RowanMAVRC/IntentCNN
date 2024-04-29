@@ -9,9 +9,12 @@ def calculate_padding_statistics(sequences, max_length, min_length):
     padding_stats = {}
 
     for id_intention, trajectories in sequences.items():
-        for trajectory in trajectories:
+        keep = []
+        for i, trajectory in enumerate(trajectories):
             if len(trajectory) < min_length:
                 continue  # Skip trajectories shorter than the minimum length
+            else:
+                keep.append(i)
 
             num_chunks = len(trajectory) // max_length
             if len(trajectory) % max_length > 0:
@@ -36,20 +39,22 @@ def calculate_padding_statistics(sequences, max_length, min_length):
 
 def trajectories_3d():
     # Define file paths
-    # data_file_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
-    # save_signature = "173857"
+    data_file_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
+    save_signature = "173857"
     # data_file_path = '/data/TGSSE/UpdatedIntentions/095823.pickle'
     # save_signature = "095823"
-    data_file_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
-    save_signature = "101108"
+    # data_file_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
+    # save_signature = "101108"
 
     # Load the dictionary back from the pickle file.
     with open(data_file_path, 'rb') as handle:
         sequences = pickle.load(handle)
 
     # Define maximum length for trajectories
-    max_length = 700
-    min_length = int(max_length * 2/3)
+    max_length = 800
+    min_factor = 2/3
+    min_length = int(max_length * min_factor)
+    print(data_file_path)
     print(f"Max length: {max_length}, Min length: {min_length}")
 
     # Calculate padding statistics
@@ -68,8 +73,10 @@ def trajectories_3d():
     average_paddings = [value['total_padding'] / value['num_chunks'] for value in padding_stats.values()]
 
     plt.figure(figsize=(10, 6))
-    plt.barh(intentions, total_paddings, color='skyblue', label='Total Padding')
-    plt.barh(intentions, average_paddings, color='orange', alpha=0.5, label='Average Padding')
+    bars = plt.barh(intentions, total_paddings, color='skyblue', label='Total Padding')
+    plt.bar_label(bars)
+    bars = plt.barh(intentions, average_paddings, color='orange', alpha=0.5, label='Average Padding')
+    plt.bar_label(bars)
     plt.xlabel('Padding')
     plt.ylabel('Intention')
 
@@ -79,9 +86,7 @@ def trajectories_3d():
     plt.legend()
     plt.savefig(f'padding_statistics_{os.path.basename(data_file_path)}_{max_length}_{min_length}_{save_signature}.png')
 
-
-    # Rest of the code remains the same
-    save_path = '/data/TGSSE/UpdatedIntentions/XYZ/' + str(max_length) + "pad_" + str(int(2/3 * 100)) +"/"
+    save_path = '/data/TGSSE/UpdatedIntentions/XYZ/' + str(max_length) + "pad_" + str(int(min_factor * 100)) +"/"
     save_file_name = f'{save_path}trajectory_with_intentions_{max_length}_pad_{min_length}_min_{save_signature}'
 
     # Initialize variables

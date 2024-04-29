@@ -19,11 +19,13 @@ def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
     plt.ylabel('Frequency')
     plt.xticks(rotation=45, ha="right")
     plt.suptitle(file_name, fontsize=16, y=0.95)  # Add file name as title
+    plt.text(0.5, 0.5, f"Total Labels: {len(labels)}", fontsize=12, transform=plt.gca().transAxes)
     
     # Plot Pie Chart
     plt.subplot(1, 3, 2)
     plt.pie(counts, labels=unique, autopct='%1.1f%%', startangle=140)
     plt.title('Label Proportion')
+    plt.text(0.5, 0.5, f"Total Labels: {len(labels)}", fontsize=12, transform=plt.gca().transAxes)
     
     # Plot Bar Chart
     plt.subplot(1, 3, 3)
@@ -32,6 +34,7 @@ def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
     plt.xlabel('Labels')
     plt.ylabel('Count')
     plt.xticks(rotation=45, ha="right")
+    plt.text(0.5, 0.5, f"Total Labels: {len(labels)}", fontsize=12, transform=plt.gca().transAxes)
     
     plt.tight_layout()
     plt.savefig(save_path)
@@ -91,7 +94,7 @@ def get_files_recursive(root_dir, extension='.pt'):
                 files.append(os.path.join(dirpath, filename))
     return files
 
-root_directory = "/data/TGSSE/UpdatedIntentions/XY/"
+root_directory = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66"
 paths = get_files_recursive(root_directory)
 
 label_mapping = {
@@ -108,7 +111,8 @@ for i, path in enumerate(paths):
     labels = data[:,0,0].view(-1)
     label_tensors.append(labels)
 
-    yaml_path = path.rsplit('.', 1)[0] + '.yaml'
+    # yaml_path = path.rsplit('.', 1)[0] + '.yaml'
+    yaml_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
     with open(yaml_path, 'r') as file:
         label_mapping = yaml.safe_load(file)
 

@@ -1,0 +1,13 @@
+path: /data/Koutsoubn8/ijcnn_full_vr_set
+train: 'train/images'
+val: 'val/images' 
+ 
+# class names
+names: 
+  0: 'AIRPLANE'
+  1: 'DRONE'
+
+
+
+
+

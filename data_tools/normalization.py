@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def mean_removed_all(data):
     """
     Remove the mean of each dimension across all trajectories.
@@ -11,30 +12,27 @@ def mean_removed_all(data):
     - mean_removed_data (numpy.ndarray): Trajectory data with mean removed along each dimension.
     """
     mean_removed_data = data.copy()
-    x_values = []
-    y_values = []
-    z_values = []
     
-    # Extract x, y, and z values from all trajectories
+    # Initialize lists for each dimension
+    dimension_values = [[] for _ in range(data.shape[2])]
+    
+    # Extract values from all trajectories for each dimension
     for trajectory in mean_removed_data:
         for point in trajectory:
-            x_values.append(point[0])
-            y_values.append(point[1])
-            z_values.append(point[2])
+            for i, value in enumerate(point):
+                dimension_values[i].append(value)
     
-    # Calculate means for each coordinate
-    x_mean = np.mean(x_values)
-    y_mean = np.mean(y_values)
-    z_mean = np.mean(z_values)
+    # Calculate means for each dimension
+    dimension_means = [np.mean(values) for values in dimension_values]
     
     # Remove means from all points
     for trajectory in mean_removed_data:
         for point in trajectory:
-            point[0] = point[0] - x_mean
-            point[1] = point[1] - y_mean
-            point[2] = point[2] - z_mean    
+            for i, mean in enumerate(dimension_means):
+                point[i] -= mean
     
     return mean_removed_data
+
 
 def mean_removed_single(data):
     """
@@ -49,32 +47,27 @@ def mean_removed_single(data):
     mean_removed_data = data.copy()
     
     for trajectory in mean_removed_data:
-        x_values = []
-        y_values = []
-        z_values = []
+        dimension_values = [[] for _ in range(data.shape[2])]
         
-        # Extract x, y, and z values from the current trajectory
+        # Extract values from the current trajectory for each dimension
         for point in trajectory:
-            x_values.append(point[0])
-            y_values.append(point[1])
-            z_values.append(point[2])
+            for i, value in enumerate(point):
+                dimension_values[i].append(value)
         
-        # Calculate means for each coordinate
-        x_mean = np.mean(x_values)
-        y_mean = np.mean(y_values)
-        z_mean = np.mean(z_values)
+        # Calculate means for each dimension
+        dimension_means = [np.mean(values) for values in dimension_values]
         
         # Remove means from all points in the current trajectory
         for point in trajectory:
-            point[0] = point[0] - x_mean
-            point[1] = point[1] - y_mean
-            point[2] = point[2] - z_mean
+            for i, mean in enumerate(dimension_means):
+                point[i] -= mean
     
     return mean_removed_data
 
-def z_score_2d(data):
+
+def z_score_standardization_single(data):
     """
-    Perform Z-score standardization on the given trajectory data for 2D coordinates.
+    Perform Z-score standardization on the given trajectory data separately for each trajectory.
 
     Parameters:
     - data (numpy.ndarray): Input trajectory data with shape (num_trajectories, num_time_steps, num_dimensions).
@@ -82,56 +75,35 @@ def z_score_2d(data):
     Returns:
     - standardized_data (numpy.ndarray): Standardized trajectory data with the same shape as the input.
     """
-    # Extract x, y coordinates for standardization
-    coordinates = data[:, :, :2]  # Extract the first 2 dimensions (x, y)
-    
-    # Compute mean and standard deviation along each axis
-    mean = np.mean(coordinates, axis=(0, 1))  # Compute mean across all trajectories and time steps
-    std_dev = np.std(coordinates, axis=(0, 1))  # Compute standard deviation across all trajectories and time steps
-    
-    # Check for zero standard deviations to avoid division by zero
-    std_dev[std_dev == 0] = 1  # Replace zero standard deviations with 1
-    
-    # Perform z-score standardization
-    standardized_coordinates = (coordinates - mean) / std_dev
-    
-    # Replace the standardized coordinates in the original data
-    standardized_data = np.copy(data)
-    standardized_data[:, :, :2] = standardized_coordinates
-    
-    return standardized_data
+    standardized_data = data.copy()
 
-def z_test(data):
-    """
-    Perform Z-score standardization on the given trajectory data.
+    # Iterate over each trajectory
+    for trajectory in standardized_data:
+        num_dimensions = trajectory.shape[1]
 
-    Parameters:
-    - data (numpy.ndarray): Input trajectory data with shape (num_trajectories, num_time_steps, num_dimensions).
+        # Extract coordinates (x, y, z) for standardization if available
+        coordinates = trajectory[:, :3] if num_dimensions >= 3 else trajectory[:, :2]
 
-    Returns:
-    - standardized_data (numpy.ndarray): Standardized trajectory data with the same shape as the input.
-    """
-    standardized_data = np.zeros_like(data)
-    
-    for i in range(data.shape[0]):  # Loop over each trajectory
-        trajectory = data[i, :, :]  # Extract trajectory data
-        
-        # Compute mean and standard deviation along each axis for the current trajectory
-        mean = np.mean(trajectory, axis=0)
-        std_dev = np.std(trajectory, axis=0)
+        # Compute mean and standard deviation along each axis
+        mean = np.mean(coordinates, axis=0)  # Compute mean for the current trajectory
+        std_dev = np.std(coordinates, axis=0)  # Compute standard deviation for the current trajectory
         
         # Check for zero standard deviations to avoid division by zero
         std_dev[std_dev == 0] = 1  # Replace zero standard deviations with 1
-        
+
         # Perform z-score standardization for the current trajectory
-        standardized_trajectory = (trajectory - mean) / std_dev
-        
-        # Replace the standardized trajectory in the output data
-        standardized_data[i, :, :] = standardized_trajectory
-    
+        standardized_coordinates = (coordinates - mean) / std_dev
+
+        # Replace the standardized coordinates in the current trajectory
+        if num_dimensions >= 3:
+            trajectory[:, :3] = standardized_coordinates
+        else:
+            trajectory[:, :2] = standardized_coordinates
+
     return standardized_data
 
-def z_score_standardization(data):
+
+def z_score_standardization_all(data):
     """
     Perform Z-score standardization on the given trajectory data.
 
@@ -141,8 +113,9 @@ def z_score_standardization(data):
     Returns:
     - standardized_data (numpy.ndarray): Standardized trajectory data with the same shape as the input.
     """
+    num_dimensions = data.shape[2]
     # Extract coordinates (x, y, z) for standardization
-    coordinates = data[:, :, :3]  # Extract the first 3 dimensions (x, y, z)
+    coordinates = data[:, :, :3] if num_dimensions >= 3 else data[:, :, :2]  # Extract the first 3 dimensions (x, y, z) if available
 
     # Compute mean and standard deviation along each axis
     mean = np.mean(coordinates, axis=(0, 1))  # Compute mean across all trajectories and time steps
@@ -156,9 +129,13 @@ def z_score_standardization(data):
 
     # Replace the standardized coordinates in the original data
     standardized_data = np.copy(data)
-    standardized_data[:, :, :3] = standardized_coordinates
+    if num_dimensions >= 3:
+        standardized_data[:, :, :3] = standardized_coordinates
+    else:
+        standardized_data[:, :, :2] = standardized_coordinates
 
     return standardized_data
+
 
 def min_max_scaling(data):
     """
@@ -191,6 +168,7 @@ def min_max_scaling(data):
     scaled_data[:, :, :3] = scaled_coordinates
 
     return scaled_data
+
 
 if __name__ == "__main__":
     # Example usage:

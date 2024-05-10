@@ -24,18 +24,28 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 
+def load_trajectory_data(file_path):
+    """
+    Load trajectory data from a pickle file.
+    
+    Args:
+    file_path (str): Path to the pickle file.
+    
+    Returns:
+    dict: Trajectory data loaded from the file.
+    """
+    with open(file_path, 'rb') as handle:
+        sequences = pickle.load(handle)
+    return sequences
+
 # Define the path to the data file
 data_path = "/data/TGSSE/SimData_2024-03-17__11-53-42_Optical/trajectory/trajectories_with_intentions.pickle"
 
 # Load trajectory data from the pickle file
-with open(data_path, 'rb') as handle:
-    sequences = pickle.load(handle)
+sequences = load_trajectory_data(data_path)
 
 # Calculate overall statistics for all trajectories
-sequence_lengths_all = []
-for key in sequences.keys():
-    for trajectory in sequences[key]:
-        sequence_lengths_all.append(len(trajectory))
+sequence_lengths_all = [len(trajectory) for key in sequences.keys() for trajectory in sequences[key]]
 
 # Compute overall statistics
 longest_sequence_all = max(sequence_lengths_all)
@@ -92,7 +102,7 @@ plt.xticks(index, intention_labels)
 plt.legend()
 
 # Save the chart to a file
-output_file = 'sequence_statistics.png'
+output_file = 'graphs/sequence_statistics.png'
 plt.savefig(output_file)
 
 # Summary of statistics

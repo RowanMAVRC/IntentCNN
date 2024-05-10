@@ -8,13 +8,20 @@
 
 Python Script to Convert CSV and MP4 files to Trajectories
 
+The main steps include:
+1. Finding matching pairs of CSV and MP4 files based on their base names.
+2. Processing each pair, extracting label information from CSV files, and associating it with corresponding frames in MP4 files.
+3. Merging the extracted label sequences into global sequences, categorized by ID and intention.
+4. Calculating statistics about the sequences, including the length of the longest and shortest sequences, as well as the average sequence length.
+5. Plotting the sequence length statistics for each intention group and saving the plot to a file.
+6. Saving the sequence data in a pickle file along with the calculated statistics.
+
 '''
 
 #-----------------------------------------------------------------------------#
 # Imports
 #-----------------------------------------------------------------------------#
 
-# Standard library imports
 import argparse  # For parsing command-line arguments
 import ast  # For safely evaluating strings containing Python expressions
 import os  # For interacting with the operating system
@@ -33,6 +40,15 @@ import matplotlib.pyplot as plt
 #-----------------------------------------------------------------------------#
 
 def find_matching_pairs(data_path):
+    '''
+    Find matching pairs of CSV and MP4 files based on their base names.
+
+    Args:
+        data_path (str): The path to the directory containing CSV and MP4 files.
+
+    Returns:
+        list: A list of tuples containing matching pairs of CSV and MP4 file paths.
+    '''
     # Initialize lists to hold the full paths of CSV and MP4 files
     csv_files = []
     mp4_files = []
@@ -191,7 +207,7 @@ if __name__ == "__main__":
     plt.legend()
 
     # Save the chart to a file
-    output_file = 'sequence_statistics.png'
+    output_file = 'graphs/sequence_statistics.png'
     plt.savefig(output_file)
     
     with open(save_path, 'wb') as handle:

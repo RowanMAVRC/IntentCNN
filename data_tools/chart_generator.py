@@ -2,6 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def generate_histogram_and_pie_chart(labels, label_mapping, file_name):
+    """
+    Generate a histogram and a pie chart for label distribution.
+
+    Args:
+    labels (list): List of labels.
+    label_mapping (dict): Mapping of labels to numeric values.
+    file_name (str): Name of the file to save the charts.
+
+    Returns:
+    None
+    """
+    # Map labels to numeric values and calculate counts
     mapped_labels = np.sort(np.array([label_mapping[label] for label in labels]))
     unique, counts = np.unique(mapped_labels, return_counts=True)
     
@@ -25,9 +37,22 @@ def generate_histogram_and_pie_chart(labels, label_mapping, file_name):
     plt.text(0.5, 0.05, f"Total Labels: {len(labels)}", fontsize=12, transform=plt.gca().transAxes)
     
     # Save the figure
-    plt.savefig(f'{file_name}_overall_distribution.png', bbox_inches='tight')  # Adjust bounding box to fit the entire plot
+    plt.savefig(f'graphs/{file_name}_overall_distribution.png', bbox_inches='tight')  # Adjust bounding box to fit the entire plot
 
 def generate_histogram_and_pie_chart_for_split(train_labels, val_labels, label_mapping, file_name):
+    """
+    Generate a histogram and a pie chart for label distribution in train and validation sets.
+
+    Args:
+    train_labels (list): List of labels in the training set.
+    val_labels (list): List of labels in the validation set.
+    label_mapping (dict): Mapping of labels to numeric values.
+    file_name (str): Name of the file to save the charts.
+
+    Returns:
+    None
+    """
+    # Map labels to numeric values and calculate counts for train and validation sets
     train_mapped_labels = np.sort(np.array([label_mapping[label] for label in train_labels]))
     val_mapped_labels = np.sort(np.array([label_mapping[label] for label in val_labels]))
     
@@ -58,4 +83,4 @@ def generate_histogram_and_pie_chart_for_split(train_labels, val_labels, label_m
     plt.text(0.5, 0.01, f"Total Labels: Train - {len(train_labels)}, Validation - {len(val_labels)}", fontsize=12, transform=plt.gca().transAxes)
     
     # Save the figure
-    plt.savefig(f'{file_name}_split_distribution.png', bbox_inches='tight')  # Adjust bounding box to fit the entire plot
+    plt.savefig(f'graphs/{file_name}_split_distribution.png', bbox_inches='tight')  # Adjust bounding box to fit the entire plot

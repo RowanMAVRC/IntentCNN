@@ -5,9 +5,21 @@ import numpy as np
 import yaml
 
 def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
-    labels = labels_tensor.numpy() # Convert tensor to numpy array for easier processing with matplotlib
-    mapped_labels = np.array([label_mapping[label] for label in labels]) # Map numeric labels to string labels
-    
+    """
+    Plot label statistics including distribution, proportion, and count.
+
+    Args:
+    - labels_tensor (torch.Tensor): Tensor containing labels.
+    - label_mapping (dict): Mapping of numeric labels to string labels.
+    - save_path (str): Path to save the plot.
+    - file_name (str): Name of the file being processed.
+    """
+    # Convert tensor to numpy array for easier processing with matplotlib
+    labels = labels_tensor.numpy()
+    # Map numeric labels to string labels
+    mapped_labels = np.array([label_mapping[label] for label in labels])
+
+    # Calculate unique labels and their counts
     unique, counts = np.unique(mapped_labels, return_counts=True)
     
     # Plot Histogram
@@ -41,6 +53,15 @@ def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
     plt.close()
 
 def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_path):
+    """
+    Plot label statistics across multiple datasets.
+
+    Args:
+    - label_tensors (list of torch.Tensor): List of tensors containing labels.
+    - label_mappings (list of dict): List of mappings of numeric labels to string labels.
+    - path_names (list of str): List of file paths.
+    - save_path (str): Path to save the plot.
+    """
     plt.figure(figsize=(15, 7))
     
     # Find the union of all labels across the different mappings
@@ -57,16 +78,12 @@ def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_pa
     # Create bins for each label index plus one for the end; subtract 0.5 for alignment
     bins = np.arange(len(label_order) + 1) - 0.5
     
-    if len(path_names) > 5:  # Remove legend if the number of files is greater than 5
-        show_legend = False
-    else:
-        show_legend = True
+    # Decide whether to show legend based on the number of files
+    show_legend = len(path_names) <= 5
     
     for labels_tensor, label_mapping, path_name in zip(label_tensors, label_mappings, path_names):
-        labels = labels_tensor.numpy()  # Convert tensor to numpy array for easier processing
-        # Map numeric labels to string labels according to each dataset's specific mapping
+        labels = labels_tensor.numpy()
         mapped_labels = [label_mapping[label] for label in labels]
-        # Convert string labels to indices for consistent binning
         label_indices = [label_to_index[label] for label in mapped_labels]
         
         plt.hist(label_indices, bins=bins, alpha=0.5, label=path_name, edgecolor='black', align='mid')
@@ -74,8 +91,6 @@ def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_pa
     plt.title('Label Distribution Across Paths')
     plt.xlabel('Labels')
     plt.ylabel('Frequency')
-    
-    # Use the label order for x-ticks
     plt.xticks(ticks=np.arange(len(label_order)), labels=label_order, rotation=45, ha="right")
     
     if show_legend:
@@ -85,8 +100,17 @@ def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_pa
     plt.savefig(save_path)
     plt.close()
 
-# Function to recursively get all files with a given extension in a directory
 def get_files_recursive(root_dir, extension='.pt'):
+    """
+    Recursively get all files with a given extension in a directory.
+
+    Args:
+    - root_dir (str): Root directory to start the search from.
+    - extension (str): File extension to filter files.
+
+    Returns:
+    - files (list of str): List of file paths.
+    """
     files = []
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
@@ -94,9 +118,11 @@ def get_files_recursive(root_dir, extension='.pt'):
                 files.append(os.path.join(dirpath, filename))
     return files
 
+# Define root directory and get file paths
 root_directory = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66"
 paths = get_files_recursive(root_directory)
 
+# Define label mapping
 label_mapping = {
     0: 'DRONE - Area Denial',
     1: 'DRONE - Kamikaze',
@@ -106,18 +132,22 @@ label_mapping = {
 
 label_tensors = []
 label_mappings = []
+
+# Load data, process labels, and plot statistics for each file
 for i, path in enumerate(paths):
     data = torch.load(path)
-    labels = data[:,0,0].view(-1)
+    labels = data[:, 0, 0].view(-1)
     label_tensors.append(labels)
 
-    # yaml_path = path.rsplit('.', 1)[0] + '.yaml'
+    # Load label mapping from YAML file
     yaml_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
     with open(yaml_path, 'r') as file:
         label_mapping = yaml.safe_load(file)
 
     label_mappings.append(label_mapping)
 
-    plot_label_statistics(labels, label_mapping, f"temp{i}.png", os.path.basename(path))  # Pass file name
+    # Plot label statistics for the current file
+    plot_label_statistics(labels, label_mapping, f"temp{i}.png", os.path.basename(path))
 
+# Plot overall label statistics across all files
 plot_all_label_statistics(label_tensors, label_mappings, paths, f"temp{i+1}.png")

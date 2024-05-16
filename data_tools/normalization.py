@@ -33,7 +33,6 @@ def mean_removed_all(data):
     
     return mean_removed_data
 
-
 def mean_removed_single(data):
     """
     Remove the mean of each dimension separately for each trajectory.
@@ -63,7 +62,6 @@ def mean_removed_single(data):
                 point[i] -= mean
     
     return mean_removed_data
-
 
 def z_score_standardization_single(data):
     """
@@ -102,7 +100,6 @@ def z_score_standardization_single(data):
 
     return standardized_data
 
-
 def z_score_standardization_all(data):
     """
     Perform Z-score standardization on the given trajectory data.
@@ -136,7 +133,6 @@ def z_score_standardization_all(data):
 
     return standardized_data
 
-
 def min_max_scaling(data):
     """
     Perform min-max scaling on the given trajectory data.
@@ -169,6 +165,49 @@ def min_max_scaling(data):
 
     return scaled_data
 
+def compute_trajectory_stats(trajectories):
+    num_trajectories = len(trajectories)
+    trajectory_lengths = np.array([len(trajectory) for trajectory in trajectories])
+    total_length = np.sum(trajectory_lengths)
+    min_x, min_y, min_z = np.min(trajectories[:, :, 0]), np.min(trajectories[:, :, 1]), np.min(trajectories[:, :, 2])
+    max_x, max_y, max_z = np.max(trajectories[:, :, 0]), np.max(trajectories[:, :, 1]), np.max(trajectories[:, :, 2])
+    avg_x, avg_y, avg_z = np.mean(trajectories[:, :, 0]), np.mean(trajectories[:, :, 1]), np.mean(trajectories[:, :, 2])
+    
+    return {
+        'Num Trajectories': num_trajectories,
+        'Total Length': total_length,
+        'Min X': min_x,
+        'Min Y': min_y,
+        'Min Z': min_z,
+        'Max X': max_x,
+        'Max Y': max_y,
+        'Max Z': max_z,
+        'Average X': avg_x,
+        'Average Y': avg_y,
+        'Average Z': avg_z,
+        'Min Length': np.min(trajectory_lengths),
+        'Max Length': np.max(trajectory_lengths),
+        'Average Length': np.mean(trajectory_lengths),
+    }
+    
+def normalize(data):
+    """
+    Normalize the input data along each coordinate axis.
+
+    Args:
+    data (np.ndarray): Input data with shape (num_samples, num_timesteps, num_dimensions).
+
+    Returns:
+    np.ndarray: Normalized data with the same shape as the input data.
+    """
+    # Determine the maximum values for each coordinate axis
+    max_values = np.max(data, axis=(0, 1))
+    
+    # Normalize each coordinate axis separately
+    normalized_data = data / max_values
+    
+    return normalized_data
+    
 
 if __name__ == "__main__":
     # Example usage:
@@ -184,3 +223,9 @@ if __name__ == "__main__":
     result = mean_removed_single(data)
     print("Original data shape:", data.shape)
     print("Mean-removed data shape:", result.shape)
+    
+    # Example usage:
+    data = np.array([[[100, 200, 300], [150, 250, 350]], [[50, 100, 150], [75, 125, 175]]])
+    normalized_data, max_values = normalize(data)
+    print("Normalized Data:\n", normalized_data)
+    print("Max Values (x, y, z):", max_values)

@@ -83,12 +83,16 @@ def find_matching_pairs(data_path):
 if __name__ == "__main__":
 
     # Extract paths from the parsed arguments
-    data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H"
-    save_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
+    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H"
+    # save_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
     # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H"
     # save_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
     # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H"
     # save_path = '/data/TGSSE/UpdatedIntentions/095823.pickle'
+    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240423_164544_Optical_6D0A0B0H"
+    # save_path = '/data/TGSSE/UpdatedIntentions/164544.pickle'
+    data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240408_151221_Optical_6D0A0B0H"
+    save_path = '/data/TGSSE/UpdatedIntentions/151221.pickle'
 
     # Replace 'data_path' with the path to your dataset directory
     matching_pairs = find_matching_pairs(data_path)

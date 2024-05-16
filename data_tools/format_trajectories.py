@@ -50,8 +50,10 @@ def calculate_padding_statistics(sequences, max_length, min_length):
 
 def trajectories_3d():
     # Define file paths
-    data_file_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
-    save_signature = "173857"
+    # data_file_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
+    # save_signature = "173857"
+    data_file_path = '/data/TGSSE/UpdatedIntentions/151221.pickle'
+    save_signature = "151221"
 
     # Load the dictionary back from the pickle file.
     with open(data_file_path, 'rb') as handle:
@@ -167,8 +169,8 @@ def trajectories_3d():
 
 def trajectories_2d():
     # Define file paths
-    data_file_path = '/data/TGSSE/UpdatedIntentions/095823.pickle'
-    save_signature = "095823"
+    data_file_path = '/data/TGSSE/UpdatedIntentions/151221.pickle'
+    save_signature = "151221"
 
     # Load the dictionary back from the pickle file.
     with open(data_file_path, 'rb') as handle:

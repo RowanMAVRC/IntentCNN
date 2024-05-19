@@ -17,7 +17,6 @@ The main steps include:
 6. Saving the sequence data in a pickle file along with the calculated statistics.
 
 '''
-
 #-----------------------------------------------------------------------------#
 # Imports
 #-----------------------------------------------------------------------------#
@@ -75,31 +74,24 @@ def find_matching_pairs(data_path):
                 break
 
     return pairs
-                
-#-----------------------------------------------------------------------------#
-# Main entry point of the script
-#-----------------------------------------------------------------------------#
 
-if __name__ == "__main__":
+def process_video_data(data_path: str, save_path: str) -> dict:
+    """
+    Processes video and label data to extract sequences of labeled frames and save the results to a pickle file.
 
-    # Extract paths from the parsed arguments
-    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H"
-    # save_path = '/data/TGSSE/UpdatedIntentions/173857.pickle'
-    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H"
-    # save_path = '/data/TGSSE/UpdatedIntentions/101108.pickle'
-    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H"
-    # save_path = '/data/TGSSE/UpdatedIntentions/095823.pickle'
-    # data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240423_164544_Optical_6D0A0B0H"
-    # save_path = '/data/TGSSE/UpdatedIntentions/164544.pickle'
-    data_path = "/data/TGSSE/UpdatedIntentions/DyViR_DS_240408_151221_Optical_6D0A0B0H"
-    save_path = '/data/TGSSE/UpdatedIntentions/151221.pickle'
+    Args:
+        data_path (str): Path to the directory containing video and CSV label data.
+        save_path (str): Path to save the resulting sequences as a pickle file.
 
-    # Replace 'data_path' with the path to your dataset directory
+    Raises:
+        AssertionError: If a video file cannot be opened.
+    """
+    # Find matching pairs of video and label files
     matching_pairs = find_matching_pairs(data_path)
     
-    sequences = {}  
+    sequences = {}  # Initialize a dictionary to store sequences
 
-    # Process each pair
+    # Process each pair of video and label files
     for csv_file, mp4_file in tqdm(matching_pairs, desc="Processing file pairs", position=0):
 
         # Open the video file
@@ -111,20 +103,17 @@ if __name__ == "__main__":
 
         # Load and process the label data from CSV
         video_labels = pd.read_csv(csv_file)
-        video_labels.dropna(subset=['label'], inplace=True)
-        video_labels.dropna(subset=['intention'], inplace=True)
+        video_labels.dropna(subset=['label', 'label_detailed', 'intention'], inplace=True)
         
-        current_sequences = {}  
+        current_sequences = {}  # Dictionary to store sequences for the current video
 
         # Process each frame in the video
         for i in tqdm(range(num_frames), desc=f"Processing {os.path.basename(mp4_file).split('.')[0]}", position=1):
             frame_info = video_labels[video_labels['frame'] == i].reset_index(drop=True)
 
-            # Prepare and write label information for each label in frame
-            # file_path = f'{data_path}labels/{csv_file.split("/")[-1].split(".")[-2]}_{i}.txt'
-            # with open(file_path, 'w') as file:
-            for j in tqdm(range(frame_info.shape[0]), desc=f"Writing labels for frame {i}", position=2, disable=True):
+            for j in range(frame_info.shape[0]):
                 label = frame_info.loc[j, "label"]
+                label_detailed = frame_info.loc[j, "label_detailed"]
                 id = frame_info.loc[j, "id"]
                 coords = ast.literal_eval(frame_info.loc[j, 'coords'])
                 depth = frame_info.loc[j, "depth_meters"]
@@ -133,28 +122,46 @@ if __name__ == "__main__":
                 key = (id, intention)  # Unique key for each combination of ID and intention
                 if key not in current_sequences:
                     current_sequences[key] = [[{
-                        'frame': i, 'label': label, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                        'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                     }]]
                 else:
                     # Check if current frame continues the last sequence or starts a new one
                     last_sequence = current_sequences[key][-1]
                     if last_sequence[-1]['frame'] == i - 1:  # Continues the sequence
                         last_sequence.append({
-                            'frame': i, 'label': label, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                         })
                     else:  # Starts a new sequence
                         current_sequences[key].append([{
-                            'frame': i, 'label': label, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                         }])
 
-        # After processing a pair, merge current sequences into global sequences
-        for key, sequence_list in tqdm(current_sequences.items(), desc="Merging sequences", position=4, disable=True):
+        # Merge current sequences into global sequences
+        for key, sequence_list in current_sequences.items():
             if key in sequences:
                 sequences[key].extend(sequence_list)
             else:
                 sequences[key] = sequence_list
 
+    # Save the sequences to a pickle file
+    with open(save_path, 'wb') as f:
+        pickle.dump(sequences, f)
+
     print(sequences)
+    print(f"Sequences saved to {save_path}")
+    
+    return sequences
+
+def plot_sequence_statistics(sequences: dict, data_path: str, 
+                             output_file: str='graphs/sequence_statistics.png') -> None:
+    """
+    Plots the sequence statistics and saves the plot to a file.
+
+    Args:
+        sequences (dict): Dictionary containing the sequences data.
+        data_path (str): Path to the data used for naming the plot file.
+        output_file (str, optional): Path to save the plot file.
+    """
     # Calculate overall statistics
     sequence_lengths_all = [len(seq) for seq_list in sequences.values() for seq in seq_list]
     longest_sequence_all = max(sequence_lengths_all)
@@ -211,8 +218,41 @@ if __name__ == "__main__":
     plt.legend()
 
     # Save the chart to a file
-    output_file = 'graphs/sequence_statistics.png'
     plt.savefig(output_file)
+    plt.close()
+    print(f"Sequence statistics saved to {output_file}")
+                
+#-----------------------------------------------------------------------------#
+# Main entry point of the script
+#-----------------------------------------------------------------------------#
+
+if __name__ == "__main__":
+
+    # Define the paths to the data and the save locations
+    data_paths = [
+        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H",
+        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H",
+        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H",
+        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240423_164544_Optical_6D0A0B0H",
+        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240408_151221_Optical_6D0A0B0H"
+    ]
+    save_paths = [
+        '/data/TGSSE/UpdatedIntentions/101108.pickle',
+        '/data/TGSSE/UpdatedIntentions/173857.pickle',
+        '/data/TGSSE/UpdatedIntentions/095823.pickle',
+        '/data/TGSSE/UpdatedIntentions/164544.pickle',
+        '/data/TGSSE/UpdatedIntentions/151221.pickle'
+    ]
     
-    with open(save_path, 'wb') as handle:
-        pickle.dump(sequences, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    if len(data_paths) != len(save_paths):
+        raise ValueError("Number of data paths and save paths must be equal.")
+
+    for data_path, save_path in zip(data_paths, save_paths):
+        # Process video data and save the sequences to a pickle file
+        sequences = process_video_data(data_path, save_path)
+
+        # Generate the path for the graph
+        graph_path = save_path.replace('.pickle', '.png')
+        
+        # Plot and save sequence statistics
+        plot_sequence_statistics(sequences, data_path, graph_path)

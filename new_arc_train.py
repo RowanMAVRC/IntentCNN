@@ -1,4 +1,11 @@
 """
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+
 ## Summary
 This script sets up an environment for training a CNN-based deep learning model to classify flight trajectories.
 It utilizes PyTorch, sklearn, and Wandb for cross-validation and tracking. The data consists of flight trajectories,
@@ -88,22 +95,31 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
     Returns:
         nn.Module: Trained model.
     """
-    for epoch in tqdm(range(num_epochs), desc=f"Training Fold {fold}"):
-        model.train()  # Set model to training mode
-        epoch_loss = 0.0
-        for inputs, labels in train_loader:
-            inputs, labels = inputs.cuda(), labels.cuda()
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            epoch_loss += loss.item()
-        val_loss, val_accuracy = evaluate_model(model, val_loader, criterion)
-        # print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss/len(train_loader):.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}')
-        wandb.log({f"train_loss": epoch_loss/len(train_loader),
-                   f"val_loss": val_loss,
-                   f"val_accuracy": val_accuracy})
+    with tqdm(total=num_epochs, desc=f"Training Fold {fold}") as pbar:
+        for epoch in range(num_epochs):
+            model.train()  # Set model to training mode
+            epoch_loss = 0.0
+            for inputs, labels in train_loader:
+                inputs, labels = inputs.cuda(), labels.cuda()
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                epoch_loss += loss.item()
+            val_loss, val_accuracy = evaluate_model(model, val_loader, criterion)
+            pbar.set_postfix({
+                'Epoch': f'{epoch+1}/{num_epochs}',
+                'Train Loss': f'{epoch_loss/len(train_loader):.4f}',
+                'Val Loss': f'{val_loss:.4f}',
+                'Val Acc': f'{val_accuracy:.4f}'
+            })
+            pbar.update(1)
+            wandb.log({
+                f"train_loss": epoch_loss/len(train_loader),
+                f"val_loss": val_loss,
+                f"val_accuracy": val_accuracy
+            })
     return model
 
 # Define the function to evaluate the model
@@ -300,6 +316,12 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
     # Train the model
     model = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=num_epochs, fold=fold, model_name=model_name)
     
+    # Save the trained model
+    model_save_path = f"trained_models/{model_name}_fold_{fold}.pth"
+    os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+    torch.save(model.state_dict(), model_save_path)
+    print(f"Model saved to {model_save_path}")
+    
     print(f"Finished training CNN model for fold {fold}.")
     return model
 
@@ -324,6 +346,24 @@ def inference(model, data_loader):
             _, preds = torch.max(outputs, 1)
             all_preds.extend(preds.cpu().numpy())
     return all_preds
+
+def load_model(model_class, model_path, input_dim, output_dim):
+    """
+    Loads a model from the specified path.
+
+    Args:
+        model_class (type): The class of the model to be loaded.
+        model_path (str): Path to the saved model state dictionary.
+        input_dim (int): Number of input features (dimensions of the trajectory).
+        output_dim (int): Number of output classes (intentions).
+
+    Returns:
+        nn.Module: Loaded model.
+    """
+    model = model_class(input_dim, output_dim)
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
+    return model
 
 def plot_and_log_statistics(train_labels: list, id2label: dict) -> tuple:
     """
@@ -582,7 +622,7 @@ if __name__ == "__main__":
         avg_inference_time = inference_time / len(test_labels)  # Calculate the average time for one guess
 
         print(f"Predictions: {preds[:10]}")  # Print first 10 predictions for brevity
-        print(f"True Labels: {test_labels[:10]}")  # Print first 10 true labels for brevity
+        print(f"True Labels: {test_labels[:10].tolist()}")  # Print first 10 true labels for brevity
         accuracy = np.mean(preds == test_labels)
         print(f"Accuracy of CNN_fold_{fold} model: {accuracy:.4f}")
         print(f"Inference time for fold {fold+1}: {inference_time:.2f} seconds")

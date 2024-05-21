@@ -125,6 +125,7 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
 
     # Initialize variables
     unique_label_intentions = set()
+    unique_label_detailed = set()
 
     # Extract unique label-intention pairs and generate mappings
     for id_intention, trajectories in sequences.items():
@@ -132,12 +133,17 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
             for frame in trajectory:
                 label = frame['label']
                 intention = frame['intention']
+                label_detailed = frame['label_detailed']
                 unique_label_intentions.add((label, intention))
+                unique_label_detailed.add(label_detailed)
     unique_label_intentions = sorted(unique_label_intentions)
+    unique_label_detailed = sorted(unique_label_detailed)
 
     # Generate string-to-number and number-to-string mappings for label-intention pairs
     str2num = {f"{label} - {intention}": num for num, (label, intention) in enumerate(unique_label_intentions)}
     num2str = {num: f"{label} - {intention}" for num, (label, intention) in enumerate(unique_label_intentions)}
+    label_detailed2num = {label_detailed: num for num, label_detailed in enumerate(unique_label_detailed)}
+    num2label_detailed = {num: label_detailed for num, label_detailed in enumerate(unique_label_detailed)}
 
     sequences_modified = []  # This will store the modified sequences
 
@@ -167,16 +173,20 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
                 
                 label = chunk[0]['label']
                 intention = chunk[0]['intention']
+                label_detailed = chunk[0]['label_detailed']
                 cls_num = str2num[f"{label} - {intention}"]
+                label_detailed_num = label_detailed2num[label_detailed]
                 
                 if dimensions == 3:
-                    coords = torch.zeros(max_length, 4)
+                    coords = torch.zeros(max_length+1, 4)
+                    coords[0] = torch.tensor([label_detailed_num, label_detailed_num, label_detailed_num, label_detailed_num])
                     for j, frame in enumerate(chunk):
-                        coords[j] = torch.tensor([cls_num, *frame['coords'], frame['depth']])
+                        coords[j+1] = torch.tensor([cls_num, *frame['coords'], frame['depth']])
                 elif dimensions == 2:
-                    coords = torch.zeros(max_length, 3)
+                    coords = torch.zeros(max_length+1, 3)
+                    coords[0] = torch.tensor([label_detailed_num, label_detailed_num, label_detailed_num])
                     for j, frame in enumerate(chunk):
-                        coords[j] = torch.tensor([cls_num, *frame['coords']])
+                        coords[j+1] = torch.tensor([cls_num, *frame['coords']])
                 else:
                     raise ValueError("Invalid number of dimensions. Must be 2 or 3.")
                     
@@ -186,7 +196,12 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
     data = torch.stack(sequences_modified)
     
     # Define the directory path to save the output files
-    save_path = f'/data/TGSSE/UpdatedIntentions/{max_length}pad_{int(min_length / max_length * 100)}/'
+    if dimensions == 3:
+        save_path = f'/data/TGSSE/UpdatedIntentions/XYZ/{max_length}pad_{int(min_length / max_length * 100)}/'
+    elif dimensions == 2:
+        save_path = f'/data/TGSSE/UpdatedIntentions/XY/{max_length}pad_{int(min_length / max_length * 100)}/'
+    else:
+        raise ValueError("Invalid number of dimensions. Must be 2 or 3.")
     
     # Ensure the directory exists or create it
     os.makedirs(save_path, exist_ok=True)
@@ -198,6 +213,9 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
     # Define the file name for the yaml mapping and save it
     with open(f'{save_file_name}.yaml', 'w') as yaml_file:
         yaml.dump(num2str, yaml_file, default_flow_style=False)
+        
+    with open(f'{save_file_name}_label_detailed.yaml', 'w') as yaml_file:
+        yaml.dump(num2label_detailed, yaml_file, default_flow_style=False)
     
 #-----------------------------------------------------------------------------#
 # Main entry point of the script

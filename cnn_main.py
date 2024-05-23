@@ -129,7 +129,7 @@ def main():
         split_stat = generate_histogram_and_pie_chart_for_split(train_labels, val_labels, id2label, f'{run_name}_fold{fold+1}')
         wandb.log({"Split Distribution": wandb.Image(split_stat)})
         
-        models[f'CNN_fold_{fold}'] = train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, 'CNN', num_epochs=num_epochs)
+        models[f'CNN_fold_{fold}'] = train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, f'{run_name}', num_epochs=num_epochs)
         
         fold_end_time = time.time()
         fold_time = fold_end_time - fold_start_time

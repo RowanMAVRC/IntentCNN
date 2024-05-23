@@ -184,7 +184,7 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
     model = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=num_epochs, fold=fold, model_name=model_name)
     
     # Save the trained model
-    model_save_path = f"trained_models/{model_name}_fold_{fold}.pth"
+    model_save_path = f"trained_models/{model_name}/fold_{fold}.pth"
     os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
     torch.save(model.state_dict(), model_save_path)
     print(f"Model saved to {model_save_path}")
@@ -231,3 +231,31 @@ def load_model(model_class, model_path, input_dim, output_dim):
     model.load_state_dict(torch.load(model_path))
     model.eval()
     return model
+
+def predict(model, input_data):
+    """
+    Performs prediction on new data using the trained model.
+
+    Args:
+        model (nn.Module): Trained CNN model.
+        input_data (numpy.ndarray): New input data for prediction.
+
+    Returns:
+        numpy.ndarray: Predictions for the new data.
+    """
+    # Ensure the model is in evaluation mode
+    model.eval()
+    
+    # Convert input data to a PyTorch tensor and create a DataLoader
+    input_tensor = torch.tensor(input_data, dtype=torch.float32)
+    data_loader = torch.utils.data.DataLoader(input_tensor, batch_size=32, shuffle=False)
+    
+    all_preds = []
+    with torch.no_grad():
+        for inputs in data_loader:
+            inputs = inputs.cuda()
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            all_preds.extend(preds.cpu().numpy())
+    
+    return np.array(all_preds)

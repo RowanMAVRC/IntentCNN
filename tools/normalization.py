@@ -19,26 +19,29 @@ def mean_removed_all(data):
     Returns:
     - mean_removed_data (numpy.ndarray): Trajectory data with mean removed along each dimension.
     """
+    if len(data.shape) != 3:
+        raise ValueError(f"Expected input data with 3 dimensions (num_trajectories, num_time_steps, num_dimensions), but got shape {data.shape}")
+
     mean_removed_data = data.copy()
-    
+
     # Initialize lists for each dimension
     dimension_values = [[] for _ in range(data.shape[2])]
-    
+
     # Extract values from all trajectories for each dimension
     for trajectory in mean_removed_data:
         for point in trajectory:
             for i, value in enumerate(point):
                 dimension_values[i].append(value)
-    
+
     # Calculate means for each dimension
     dimension_means = [np.mean(values) for values in dimension_values]
-    
+
     # Remove means from all points
     for trajectory in mean_removed_data:
         for point in trajectory:
             for i, mean in enumerate(dimension_means):
                 point[i] -= mean
-    
+
     return mean_removed_data
 
 def mean_removed_single(data):

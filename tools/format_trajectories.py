@@ -238,12 +238,12 @@ if __name__ == "__main__":
         "164544",
         "151221"
     ]
-    # min_factors = [0, 1/3, 2/3]
-    min_factors = [2/3]
-    min_pad = 800
+    min_factors = [0, 1/3, 2/3]
+    # min_factors = [2/3]
+    min_pad = 100
     max_pad = 900
     
-    total_runs = len(data_paths) * len(min_factors) * len(range(min_pad, max_pad, 100))
+    total_runs = len(data_paths) * len(min_factors) * len(range(min_pad, max_pad, 100)) * 2
     current_run = 1
     
     for i in range(min_pad, max_pad, 100):
@@ -253,6 +253,6 @@ if __name__ == "__main__":
                 process_trajectories(data_path, save_signature, dimensions=3, max_length=i, min_factor=min_factor)
                 current_run += 1
 
-                # print(f"Run {current_run}/{total_runs}: Processing {data_path} with max_length={i}, min_factor={min_factor}, dimensions=2")
-                # process_trajectories(data_path, save_signature, dimensions=2, max_length=i, min_factor=min_factor)
-                # current_run += 1
+                print(f"Run {current_run}/{total_runs}: Processing {data_path} with max_length={i}, min_factor={min_factor}, dimensions=2")
+                process_trajectories(data_path, save_signature, dimensions=2, max_length=i, min_factor=min_factor)
+                current_run += 1

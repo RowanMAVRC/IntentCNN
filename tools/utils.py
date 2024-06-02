@@ -5,6 +5,10 @@
 # Package Imports
 import numpy as np
 import matplotlib.pyplot as plt
+from tools.load_data import load_flight_data_single
+from captum.attr import IntegratedGradients
+import torch
+import torch.nn as nn
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -142,3 +146,83 @@ def generate_histogram_and_pie_chart_for_split(train_labels, val_labels, label_m
     plt.close(fig)
     
     return fig_img
+
+def plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path):
+    """
+    Plot a bar graph where each drone class has a bar for each intent class, showing how many sequences are of that drone class doing that intention.
+
+    Args:
+        train_trajectories (numpy.ndarray): Array of trajectories.
+        train_labels (list): List of labels corresponding to the trajectories.
+        drone_classes (list): List of drone classes corresponding to the trajectories.
+        id2label (dict): Mapping of label IDs to labels.
+        id2label_detailed (dict): Mapping of detailed label IDs to detailed labels.
+        output_path (str): Path to save the output plot.
+    """
+    # Create a dictionary to hold the counts
+    counts = {drone_class: {intent: 0 for intent in id2label_detailed.keys()} for drone_class in id2label.keys()}
+
+    # Count the occurrences
+    for drone_class, intent in zip(drone_classes, train_labels):
+        counts[drone_class[0]][intent] += 1
+
+    # Plot the counts
+    fig, ax = plt.subplots(figsize=(10, 7))
+    bar_width = 0.2
+    bar_positions = np.arange(len(id2label_detailed))
+
+    for i, (drone_class, intents) in enumerate(counts.items()):
+        counts_list = [intents[intent] for intent in sorted(intents.keys())]
+        bar_positions_offset = bar_positions + (i * bar_width)
+        ax.bar(bar_positions_offset, counts_list, bar_width, label=id2label[drone_class])
+
+    ax.set_xlabel('Intent Classes')
+    ax.set_ylabel('Number of Sequences')
+    ax.set_title('Number of Sequences per Drone Class and Intent')
+    ax.set_xticks(bar_positions + bar_width * (len(counts) - 1) / 2)
+    ax.set_xticklabels([id2label_detailed[intent] for intent in sorted(id2label_detailed.keys())])
+    ax.legend(title='Drone Classes')
+
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+    
+def generate_and_save_attribution_map(model, input_data, target_class, output_path):
+    """
+    Generate and save an attribution map using Integrated Gradients.
+
+    Args:
+        model (torch.nn.Module): The trained CNN model.
+        input_data (numpy.ndarray): The input data for which to generate the attribution map.
+        target_class (int): The target class for which to calculate attributions.
+        output_path (str): The path to save the attribution map image.
+    """
+    # Preprocess the input data
+    def preprocess_input(input_data):
+        input_tensor = torch.tensor(input_data, dtype=torch.float32).unsqueeze(0)
+        return input_tensor
+
+    input_tensor = preprocess_input(input_data)
+
+    # Initialize Integrated Gradients
+    ig = IntegratedGradients(model)
+
+    # Calculate attributions
+    attributions, delta = ig.attribute(input_tensor, target=target_class, return_convergence_delta=True)
+
+    # Visualize attributions
+    attributions = attributions.squeeze().cpu().detach().numpy()
+
+    plt.figure(figsize=(10, 6))
+    for i in range(attributions.shape[0]):
+        plt.plot(attributions[i], label=f'Feature {i+1}')
+    plt.title('Integrated Gradients Attributions')
+    plt.xlabel('Time Steps')
+    plt.ylabel('Attribution')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+    print(f"Attribution map saved as '{output_path}'")

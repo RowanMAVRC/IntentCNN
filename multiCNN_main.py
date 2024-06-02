@@ -1,19 +1,3 @@
-"""
- _____       _             _                           
-|_   _|     | |           | |    ____  _   _  _   _                           
-  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
-  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
- _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
-|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
-
-## Summary
-This script sets up an environment for training a CNN-based deep learning model to classify flight trajectories.
-It utilizes PyTorch, sklearn, and Wandb for cross-validation and tracking. The data consists of flight trajectories,
-and the model predicts the intention of the object based on these trajectories. The script includes functions for 
-loading and preprocessing data, defining the model architecture, training the model, evaluating performance, and 
-running inference.
-"""
-
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -33,11 +17,15 @@ import numpy as np
 import torch
 import wandb
 from sklearn.model_selection import KFold
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from sklearn.utils.class_weight import compute_class_weight
 
 # File Imports
-from tools.load_data import load_flight_data_single, load_flight_data
-from cfgs.models.intentCNN import train_cnn, inference, prepare_dataloader, CNNModel
-from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split, plot_drone_intent_statistics, generate_and_save_attribution_map
+from tools.load_data import load_flight_data
+from cfgs.models.multiTaskCNN import inference, prepare_dataloader, MultitaskCNNModel, train_model
+from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -62,25 +50,6 @@ def main():
         kernel_size = 8
         project_name = "cnn_trajectory_classification"
         run_name = "400pad_66"
-        
-        output_path = "drone_intent_statistics.png"
-
-        # Load data
-        train_trajectories, train_labels, drone_classes, id2label, label2id, id2label_detailed = load_flight_data_single(data_path, intent_labels, detect_labels)
-
-        # Plot and save statistics
-        plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path)
-        
-        # Load your trained model
-        model = CNNModel(input_dim=3, output_dim=4, kernel_size=8)
-        model.load_state_dict(torch.load('/home/cipoll17/IntentFormer/trained_models/400pad_66/fold_0.pth'))
-        model.eval()
-
-        # Example input data (replace with your actual data)
-        input_data = train_trajectories  # Example input with 100 timesteps and 3 features
-
-        # Generate and save attribution map
-        generate_and_save_attribution_map(model, input_data, target_class=0, output_path='integrated_gradients_attributions.png')
         
     else:
         # Parse command-line arguments
@@ -131,8 +100,7 @@ def main():
     wandb.init(project=project_name, name=f"Overall_Labels_{run_name}", config=config)
     
     # Load dataset
-    # flight_data, flight_labels, _, id2label, label2id, id2label_detailed = load_flight_data_single(data_path, intent_labels, detect_labels, augment)
-    flight_data, flight_labels, _, id2label, label2id, id2label_detailed = load_flight_data(data_path, intent_labels, detect_labels, augment)
+    flight_data, flight_labels, task_names, id2label, label2id, id2label_detailed = load_flight_data(data_path, intent_labels, detect_labels, augment)
     print(f"Total trajectories: {len(flight_data)}")
     
     # Split data into training and test sets
@@ -144,8 +112,10 @@ def main():
     train_indices = indices[test_size:]
     test_data = flight_data[test_indices]
     test_labels = np.array(flight_labels)[test_indices]
+    test_task_names = np.array(task_names)[test_indices]
     flight_data = flight_data[train_indices]
     flight_labels = np.array(flight_labels)[train_indices]
+    task_names = np.array(task_names)[train_indices]
     
     # Generate charts for the entire flight data
     stat_img = generate_histogram_and_pie_chart(flight_labels, id2label, data_path)
@@ -163,6 +133,14 @@ def main():
     
     total_start_time = time.time()
     
+    # Task output dimensions as specified
+    task_output_dims = {
+        "0": 2,  # BAYRAKTART2: Travel, Kamikaze
+        "1": 3,  # HEX1: Travel, Recon, Area Denial
+        "2": 3,  # QUAD: Travel, Recon, Area Denial
+        "3": 2,  # SWITCHBLADE: Travel, Kamikaze
+    }
+    
     # Iterate over folds
     for fold, (train_idx, val_idx) in enumerate(kf.split(flight_data)):
         print(f"\nFold {fold+1}/{kf.n_splits}\n")
@@ -175,6 +153,7 @@ def main():
         # Split data into train and validation sets
         train_trajectories, val_trajectories = flight_data[train_idx], flight_data[val_idx]
         train_labels, val_labels = np.array(flight_labels)[train_idx], np.array(flight_labels)[val_idx]
+        train_task_names, val_task_names = task_names[train_idx], task_names[val_idx]
         print(f"Training set size: {len(train_trajectories)}")
         print(f"Validation set size: {len(val_trajectories)}")
         
@@ -182,9 +161,42 @@ def main():
         split_stat = generate_histogram_and_pie_chart_for_split(train_labels, val_labels, id2label, f'{run_name}_fold{fold+1}')
         wandb.log({"Split Distribution": wandb.Image(split_stat)})
         
+        # Define input dimension
+        input_dim = train_trajectories.shape[2]
+        
+        # Initialize the multitask CNN model
+        model = MultitaskCNNModel(input_dim, task_output_dims, kernel_size).cuda()
+        
         # Train the model for the current fold
-        models[f'CNN_fold_{fold}'] = train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, f'{run_name}',
-                                               num_epochs=num_epochs, batch_size=batch_size, kernel_size=kernel_size)
+        models[f'CNN_fold_{fold}'] = {}
+        for task_name in np.unique(train_task_names):
+            task_train_idx = np.where(train_task_names == task_name)[0]
+            task_val_idx = np.where(val_task_names == task_name)[0]
+            task_train_trajectories = train_trajectories[task_train_idx]
+            task_train_labels = train_labels[task_train_idx]
+            task_val_trajectories = val_trajectories[task_val_idx]
+            task_val_labels = val_labels[task_val_idx]
+            task_train_loader = prepare_dataloader(task_train_trajectories, task_train_labels, batch_size=batch_size, shuffle=True)
+            task_val_loader = prepare_dataloader(task_val_trajectories, task_val_labels, batch_size=batch_size, shuffle=False)
+            
+            # Ensure task labels are within range
+            # assert all(task_train_labels >= 0) and all(task_train_labels < task_output_dims[str(task_name)])
+            # assert all(task_val_labels >= 0) and all(task_val_labels < task_output_dims[str(task_name)])
+            
+            # Compute class weights to handle class imbalance
+            unique_classes = np.unique(task_train_labels)
+            if len(unique_classes) > 1:
+                class_weights = compute_class_weight('balanced', classes=unique_classes, y=task_train_labels)
+                class_weights = torch.tensor(class_weights, dtype=torch.float).cuda()
+                criterion = nn.CrossEntropyLoss(weight=class_weights)
+            else:
+                criterion = nn.CrossEntropyLoss()
+            
+            # Define the optimizer
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+            
+            # Train the model for the current task
+            models[f'CNN_fold_{fold}'][task_name] = train_model(model, task_train_loader, task_val_loader, criterion, optimizer, num_epochs, fold, str(task_name))
         
         fold_end_time = time.time()
         fold_time = fold_end_time - fold_start_time
@@ -192,24 +204,30 @@ def main():
         
         print(f"\nPerforming inference with CNN_fold_{fold} model...")
         
-        # Perform inference on the test set using the trained model
+        # Perform inference on the test set using the trained model for each task
         inference_start_time = time.time()
-        preds = inference(models[f'CNN_fold_{fold}'], prepare_dataloader(test_data, test_labels, batch_size=batch_size, shuffle=False))
+        for task_name in np.unique(test_task_names):
+            task_test_idx = np.where(test_task_names == task_name)[0]
+            task_test_data = test_data[task_test_idx]
+            task_test_labels = test_labels[task_test_idx]
+            task_test_loader = prepare_dataloader(task_test_data, task_test_labels, batch_size=batch_size, shuffle=False)
+            preds = inference(models[f'CNN_fold_{fold}'][task_name], task_test_loader, str(task_name))
+            
+            # Print and log inference results
+            print(f"Predictions for task {task_name}: {preds[:10]}")
+            print(f"True Labels for task {task_name}: {task_test_labels[:10].tolist()}")
+            accuracy = np.mean(preds == task_test_labels)
+            print(f"Accuracy of CNN_fold_{fold} model for task {task_name}: {accuracy:.4f}")
+            wandb.log({f"inference_accuracy_task_{task_name}": accuracy})
+        
         inference_end_time = time.time()
         inference_time = inference_end_time - inference_start_time
         avg_inference_time = inference_time / len(test_labels)
-
-        # Print and log inference results
-        print(f"Predictions: {preds[:10]}")
-        print(f"True Labels: {test_labels[:10].tolist()}")
-        accuracy = np.mean(preds == test_labels)
-        print(f"Accuracy of CNN_fold_{fold} model: {accuracy:.4f}")
+        
         print(f"Inference time for fold {fold+1}: {inference_time:.2f} seconds")
         print(f"Average time per guess: {avg_inference_time:.4f} seconds")
-        wandb.log({f"inference_accuracy": accuracy,
-                   f"inference_time": inference_time,
-                   f"avg_time_per_guess": avg_inference_time})
-
+        wandb.log({f"inference_time_fold_{fold}": inference_time, f"avg_time_per_guess_fold_{fold}": avg_inference_time})
+        
         # End the current wandb run
         wandb.finish()
     
@@ -227,4 +245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

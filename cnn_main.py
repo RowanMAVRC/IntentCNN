@@ -71,17 +71,6 @@ def main():
         # Plot and save statistics
         plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path)
         
-        # Load your trained model
-        model = CNNModel(input_dim=3, output_dim=4, kernel_size=8)
-        model.load_state_dict(torch.load('/home/cipoll17/IntentFormer/trained_models/400pad_66/fold_0.pth'))
-        model.eval()
-
-        # Example input data (replace with your actual data)
-        input_data = train_trajectories  # Example input with 100 timesteps and 3 features
-
-        # Generate and save attribution map
-        generate_and_save_attribution_map(model, input_data, target_class=0, output_path='integrated_gradients_attributions.png')
-        
     else:
         # Parse command-line arguments
         parser = argparse.ArgumentParser(description='Flight Trajectory Classification')

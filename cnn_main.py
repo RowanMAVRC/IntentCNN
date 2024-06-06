@@ -21,7 +21,7 @@ running inference.
 # This needs to be done before other imports
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Python Imports
 import argparse
@@ -52,7 +52,7 @@ def main():
     
     if debug:
         # Debug configuration
-        data_path = "/data/TGSSE/UpdatedIntentions/XYZ/400pad_66"
+        data_path = "/data/TGSSE/UpdatedIntentions/XY/100pad_0"
         intent_labels = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
         detect_labels = "/data/TGSSE/UpdatedIntentions/detect_labels.yaml"
         num_epochs = 100
@@ -60,8 +60,8 @@ def main():
         batch_size = 128
         n_kfolds = 5
         kernel_size = 8
-        project_name = "cnn_trajectory_classification"
-        run_name = "400pad_66"
+        project_name = "cnn_trajectory_classificationXY"
+        run_name = "100pad_0"
         
         output_path = "drone_intent_statistics.png"
 

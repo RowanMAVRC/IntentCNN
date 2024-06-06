@@ -168,3 +168,4 @@ wandb/
 *.out
 *.png
 *.mp4
+*.pth

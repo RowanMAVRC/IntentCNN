@@ -24,7 +24,7 @@ preparation, model training, to making predictions in a domain-specific applicat
 # This needs to be done before other imports
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Python Imports
 import argparse
@@ -62,6 +62,7 @@ from data_tools.augmentations import flip_trajectories_x, augment_with_jitters
 
 def load_flight_data(data_path: str, 
                      labels_path: str,
+                     label_detailed_path: str,
                      augment: bool = False) -> tuple:
     """
     Load flight trajectory data and associated labels for a binary classification task.
@@ -82,12 +83,16 @@ def load_flight_data(data_path: str,
         FileNotFoundError: If either data_path or labels_path does not exist.
     """
     # Check if data directory exists
-    if not os.path.exists(data_path):
+    if not os.path.exists(data_path) or data_path == "" or data_path is None:
         raise FileNotFoundError(f"Data directory '{data_path}' does not exist.")
     
     # Check if labels file exists
-    if not os.path.exists(labels_path):
+    if not os.path.exists(labels_path) or labels_path == "" or labels_path is None:
         raise FileNotFoundError(f"Labels file '{labels_path}' does not exist.")
+    
+    # Check if detailed labels file exists
+    if not os.path.exists(label_detailed_path) or label_detailed_path == "" or label_detailed_path is None:
+        raise FileNotFoundError(f"Labels file '{label_detailed_path}' does not exist.")
     
     # Load training trajectories
     if os.path.isfile(data_path):
@@ -106,29 +111,49 @@ def load_flight_data(data_path: str,
 
     # Convert the list of trajectories to a numpy array
     train_trajectories = np.array(train_trajectories)
+
+    # Copy all the first points
+    first_points = [trajectory[0].copy() for trajectory in train_trajectories]
+    
+    # Remove the first points from all trajectories
+    remaining_trajectories = [trajectory[1:] for trajectory in train_trajectories]
+    remaining_trajectories = np.array(remaining_trajectories)
     
     # Extract labels from trajectories
-    train_labels = [int(trajectory[0][0]) for trajectory in train_trajectories]
-    train_trajectories = np.delete(train_trajectories, 0, axis=2)
-    print(f"Train Trajectories Shape: {train_trajectories.shape}")
-    train_trajectories = normalize(train_trajectories)
+    train_labels = [int(trajectory[0][0]) for trajectory in remaining_trajectories]
+    remaining_trajectories = np.delete(remaining_trajectories, 0, axis=2)
+
+    # Normalize and mean remove the remaining trajectories
+    normalized_trajectories = normalize(remaining_trajectories)
+    mean_removed_trajectories = mean_removed_all(normalized_trajectories)
     
-    # Mean removal
-    train_trajectories = mean_removed_all(train_trajectories)
     if augment:
         print("Augment")
         # Flip trajectories along the x-axis
-        flipped_trajectories = flip_trajectories_x(train_trajectories)
+        flipped_trajectories = flip_trajectories_x(mean_removed_trajectories)
         # Concatenate original and flipped trajectories along the first axis (num_trajectories)
-        train_trajectories = np.concatenate((train_trajectories, flipped_trajectories), axis=0)
+        mean_removed_trajectories = np.concatenate((mean_removed_trajectories, flipped_trajectories), axis=0)
         train_labels += train_labels
+        first_points += first_points
+    
+    # Add the first points back to the processed trajectories
+    processed_trajectories = []
+    for first_point, mean_removed_trajectory in zip(first_points, mean_removed_trajectories):
+        processed_trajectory = np.vstack((first_point[1:], mean_removed_trajectory))
+        processed_trajectories.append(processed_trajectory)
+    
+    train_trajectories = np.array(processed_trajectories)
 
     # Create a map of the expected ids to their labels with `id2label` and `label2id`
     with open(labels_path, "r") as stream:
         id2label = yaml.safe_load(stream)
     label2id = {v: k for k, v in id2label.items()}
+    
+    with open(label_detailed_path, "r") as stream:
+        id2label_detailed = yaml.safe_load(stream)
+    label_detailed2id = {v: k for k, v in id2label_detailed.items()}
 
-    return train_trajectories, train_labels, id2label, label2id
+    return train_trajectories, train_labels, id2label, label2id, id2label_detailed
 
 def preprocess_function(examples):
     """
@@ -140,9 +165,52 @@ def preprocess_function(examples):
     Returns:
         A dictionary with tokenized input suitable for BERT, including attention masks.
     """
-    # Convert trajectories to strings
-    trajectories_str = [" ".join(map(str, np.array(traj).flatten())) for traj in examples["trajectory"]]
-    return tokenizer(trajectories_str, padding="max_length", truncation=True, max_length=512)
+    exp = "Original"
+    
+    def format_trajectory(traj):
+        # Format each point as (x, y, z) and join them with spaces
+        return " ".join(f"({x}, {y}, {z})" for x, y, z in np.array(traj).reshape(-1, 3))
+
+    # Get the drone model names
+    drone_models = [id2label_detailed[int(traj[0][0])].split('|')[0] for traj in examples["trajectory"]]
+    for traj in examples["trajectory"]:
+        traj.pop(0)
+    
+    special_tokens = 2  # [CLS] and [SEP]
+
+    if exp == "Original":
+        # Construct detailed contextual sentences
+        contextual_sentences = [
+            f"This trajectory data is from a {model} drone flight."
+            for model in drone_models
+        ]
+        
+        # Tokenize the contextual sentences to determine their lengths
+        context_token_lengths = [len(tokenizer.tokenize(sentence)) for sentence in contextual_sentences]
+        max_context_length = max(context_token_lengths)
+
+        # Calculate the available tokens for the trajectory data
+        available_tokens_for_trajectory = 512 - max_context_length - special_tokens
+
+        # Each coordinate point (x, y, z) will result in multiple tokens due to labeling and structure
+        tokens_per_point = 10  # Estimate more tokens due to descriptive text
+        max_trajectory_points = available_tokens_for_trajectory // tokens_per_point
+        
+        # Use the format_trajectory function to create the formatted trajectory strings
+        trajectories_str = [
+            f"{context_sentence} Trajectory: {format_trajectory(traj[:max_trajectory_points])}"
+            for context_sentence, traj in zip(contextual_sentences, examples["trajectory"])
+        ]
+
+    tokenized_inputs = tokenizer(
+        trajectories_str, 
+        padding="max_length", 
+        truncation=True, 
+        max_length=512,
+        return_tensors="pt"
+    )
+    
+    return tokenized_inputs
 
 def compute_metrics(eval_pred):
     """
@@ -165,12 +233,14 @@ def compute_metrics(eval_pred):
 # ------------------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
-    debug = True
+    
+    debug = False
 
     if debug:
         # Debug configuration
         data_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66" 
         labels_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
+        label_detailed_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/trajectory_with_intentions_800_pad_533_min_151221_label_detailed.yaml"
         num_train_epochs = 75
         learning_rate = 1e-3
         per_device_eval_batch_size = 8
@@ -185,6 +255,7 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='Flight Trajectory Classification')
         parser.add_argument('--data_path', type=str, help='Path to trajectory data: Directory containing .pt files')
         parser.add_argument('--labels_path', type=str, help='Path to labels data: .yaml file')
+        parser.add_argument('--label_detailed_path', type=str, help='Path to detailed labels data: .yaml file')
         parser.add_argument('--num_train_epochs', type=int, default=75, help='Number of training epochs')
         parser.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate')
         parser.add_argument('--per_device_train_batch_size', type=int, default=8, help='Batch size for training')
@@ -195,11 +266,11 @@ if __name__ == "__main__":
         parser.add_argument('--run_name', type=str, default='mobilebert_run', help='Run name for wandb')
         parser.add_argument('--augment', type=str, default='True', help='Whether or not to augment the data')
         args = parser.parse_args()
-        
         # Definitions
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         data_path = args.data_path
         labels_path = args.labels_path
+        label_detailed_path = args.label_detailed_path
         num_train_epochs = args.num_train_epochs
         learning_rate = args.learning_rate
         per_device_train_batch_size = args.per_device_train_batch_size
@@ -214,7 +285,7 @@ if __name__ == "__main__":
             print(f"{arg}: {getattr(args, arg)}")
         
     # Load dataset
-    flight_data, flight_labels, id2label, label2id = load_flight_data(data_path, labels_path, augment)
+    flight_data, flight_labels, id2label, label2id, id2label_detailed = load_flight_data(data_path, labels_path, label_detailed_path, augment)
     num_labels = len(id2label)
     
     # Generate charts for the entire flight data
@@ -231,12 +302,6 @@ if __name__ == "__main__":
         
         # Initialize a new wandb run for each fold
         wandb.init(project=project_name, group=f"{run_name}", name=f"{run_name}_Fold{fold_idx}")
-        wandb.log({"Data Directory": data_path, "Labels Path": labels_path, 
-                  "Number of Training Epochs": num_train_epochs, "Learning Rate": learning_rate,
-                  "Batch Size for Training": per_device_train_batch_size, "Batch Size for Evaluation": per_device_eval_batch_size,
-                  "Number of Splits for KFold Cross-Validation": n_splits, "Weight Decay": weight_decay,
-                  "Project Name": project_name, "Run Name": run_name, "Fold Index": fold_idx,
-                  "Augment": augment})
 
         # Split data into train and validation sets
         train_trajectories, val_trajectories = flight_data[train_index], flight_data[val_index]
@@ -254,6 +319,9 @@ if __name__ == "__main__":
         
         # Load Tokenizer
         tokenizer = AutoTokenizer.from_pretrained("google/mobilebert-uncased")
+        
+        # Fix tokenizer config
+        tokenizer.model_max_length = 512
         
         # Apply preprocessing
         tokenized_data = data_dict.map(preprocess_function, batched=True)

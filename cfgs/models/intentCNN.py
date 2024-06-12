@@ -54,8 +54,8 @@ class CNNModel(nn.Module):
         x = self.dropout(x)  # Apply dropout
         x = self.fc(x)  # Apply fully connected layer
         return x
-    
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, fold):
+
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, fold, device):
     """
     Trains the model and logs training progress to WandB.
 
@@ -67,6 +67,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         optimizer (Optimizer): Optimizer for updating model parameters.
         num_epochs (int): Number of training epochs.
         fold (int): Current fold number for cross-validation.
+        device (torch.device): The device to run the training on.
 
     Returns:
         nn.Module: Trained model.
@@ -76,7 +77,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             model.train()  # Set model to training mode
             epoch_loss = 0.0
             for inputs, labels in train_loader:
-                inputs, labels = inputs.cuda(), labels.cuda()
+                inputs, labels = inputs.to(device), labels.to(device)
                 optimizer.zero_grad()  # Reset gradients
                 outputs = model(inputs)  # Forward pass
                 loss = criterion(outputs, labels)  # Compute loss
@@ -85,7 +86,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                 epoch_loss += loss.item()  # Accumulate loss
 
             # Evaluate model on validation data
-            val_loss, val_accuracy = evaluate_model(model, val_loader, criterion)
+            val_loss, val_accuracy = evaluate_model(model, val_loader, criterion, device)
             
             # Update progress bar and WandB logs
             pbar.set_postfix({
@@ -102,7 +103,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             })
     return model
 
-def evaluate_model(model, data_loader, criterion):
+def evaluate_model(model, data_loader, criterion, device):
     """
     Evaluates the model on the validation data.
 
@@ -110,6 +111,7 @@ def evaluate_model(model, data_loader, criterion):
         model (nn.Module): The trained CNN model.
         data_loader (DataLoader): DataLoader for the validation data.
         criterion (Loss): Loss function.
+        device (torch.device): The device to run the evaluation on.
 
     Returns:
         tuple: (Average validation loss, Validation accuracy)
@@ -120,7 +122,7 @@ def evaluate_model(model, data_loader, criterion):
     total_loss = 0.0
     with torch.no_grad():  # Disable gradient computation
         for inputs, labels in data_loader:
-            inputs, labels = inputs.cuda(), labels.cuda()
+            inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)  # Forward pass
             loss = criterion(outputs, labels)  # Compute loss
             total_loss += loss.item()  # Accumulate loss
@@ -163,7 +165,7 @@ def prepare_dataloader(trajectories, labels, batch_size=32, shuffle=True):
     return dataloader
 
 def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, model_name, 
-              lr=0.001, num_epochs=10, batch_size=32, kernel_size=8):
+              device, lr=0.001, num_epochs=10, batch_size=32, kernel_size=8):
     """
     Trains the CNN model with the provided data and cross-validation fold.
 
@@ -174,6 +176,7 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
         val_labels (list): Labels for the validation trajectories.
         fold (int): Current fold number for cross-validation.
         model_name (str): Name of the model.
+        device (torch.device): The device to run the training on.
         lr (float, optional): Learning rate for the optimizer. Defaults to 0.001.
         num_epochs (int, optional): Number of training epochs. Defaults to 10.
         batch_size (int, optional): Batch size for training. Defaults to 32.
@@ -194,15 +197,15 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
     
     # Compute class weights to handle class imbalance
     class_weights = compute_class_weight('balanced', classes=np.unique(train_labels), y=train_labels)
-    class_weights = torch.tensor(class_weights, dtype=torch.float).cuda()
+    class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
 
     # Initialize the model, criterion, and optimizer
-    model = CNNModel(input_dim, output_dim, kernel_size).cuda()
+    model = CNNModel(input_dim, output_dim, kernel_size).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     # Train the model
-    model = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=num_epochs, fold=fold)
+    model = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs=num_epochs, fold=fold, device=device)
     
     # Save the trained model
     model_save_path = f"trained_models/{model_name}/fold_{fold}.pth"
@@ -213,13 +216,14 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
     print(f"Finished training CNN model for fold {fold}.")
     return model
 
-def inference(model, data_loader):
+def inference(model, data_loader, device):
     """
     Performs inference on the validation data.
 
     Args:
         model (nn.Module): Trained CNN model.
         data_loader (DataLoader): DataLoader for the validation data.
+        device (torch.device): The device to run the inference on.
 
     Returns:
         list: Predictions for the validation data.
@@ -228,13 +232,13 @@ def inference(model, data_loader):
     all_preds = []
     with torch.no_grad():  # Disable gradient computation
         for inputs, _ in data_loader:
-            inputs = inputs.cuda()
+            inputs = inputs.to(device)
             outputs = model(inputs)  # Forward pass
             _, preds = torch.max(outputs, 1)  # Get predictions
             all_preds.extend(preds.cpu().numpy())  # Store predictions
     return all_preds
 
-def load_model(model_class, model_path, input_dim, output_dim):
+def load_model(model_class, model_path, input_dim, output_dim, device):
     """
     Loads a model from the specified path.
 
@@ -243,22 +247,25 @@ def load_model(model_class, model_path, input_dim, output_dim):
         model_path (str): Path to the saved model state dictionary.
         input_dim (int): Number of input features (dimensions of the trajectory).
         output_dim (int): Number of output classes (intentions).
+        device (torch.device): The device to load the model on.
 
     Returns:
         nn.Module: Loaded model.
     """
     model = model_class(input_dim, output_dim)
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.to(device)
     model.eval()  # Set model to evaluation mode
     return model
 
-def predict(model, input_data):
+def predict(model, input_data, device):
     """
     Performs prediction on new data using the trained model.
 
     Args:
         model (nn.Module): Trained CNN model.
         input_data (numpy.ndarray): New input data for prediction.
+        device (torch.device): The device to run the prediction on.
 
     Returns:
         numpy.ndarray: Predictions for the new data.
@@ -272,7 +279,7 @@ def predict(model, input_data):
     all_preds = []
     with torch.no_grad():  # Disable gradient computation
         for inputs in data_loader:
-            inputs = inputs.cuda()
+            inputs = inputs.to(device)
             outputs = model(inputs)  # Forward pass
             _, preds = torch.max(outputs, 1)  # Get predictions
             all_preds.extend(preds.cpu().numpy())  # Store predictions

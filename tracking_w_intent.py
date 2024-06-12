@@ -276,9 +276,9 @@ if __name__ == "__main__":
     # Settings
     detect_path = "/data/TGSSE/weights/detection/DyViR_Combined.pt"    
     # intent_path = "/home/cipoll17/IntentFormer/weights/CNN_fold_4.pth"
-    intent_path = "/home/cipoll17/IntentFormer/trained_models/100pad_0/fold_0.pth"
-    # intent_path = "/home/cipoll17/IntentFormer/weights/CNN_fold_0.pth"
-    label_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
+    # intent_path = "/home/cipoll17/IntentFormer/trained_models/100pad_0/fold_0.pth"
+    intent_path = "/home/cipoll17/IntentFormer/weights/CNN_fold_0.pth"
+    label_path = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
     label_detailed_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/trajectory_with_intentions_800_pad_533_min_101108_label_detailed.yaml"
     
     tracker_path = "cfgs/tracking/trackers/botsort_90.yaml"

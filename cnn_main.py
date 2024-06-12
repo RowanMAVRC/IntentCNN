@@ -19,13 +19,12 @@ running inference.
 # ------------------------------------------------------------------------------------- #
 
 # This needs to be done before other imports
-import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# import os
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Python Imports
 import argparse
-import yaml
 import time
 
 # Package Imports
@@ -35,9 +34,9 @@ import wandb
 from sklearn.model_selection import KFold
 
 # File Imports
-from tools.load_data import load_flight_data_single, load_flight_data
-from cfgs.models.intentCNN import train_cnn, inference, prepare_dataloader, CNNModel
-from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split, plot_drone_intent_statistics, generate_and_save_attribution_map
+from tools.load_data import load_flight_data
+from cfgs.models.intentCNN import train_cnn, inference, prepare_dataloader
+from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split, plot_drone_intent_statistics
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -55,21 +54,22 @@ def main():
         data_path = "/data/TGSSE/UpdatedIntentions/XY/100pad_0"
         intent_labels = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
         detect_labels = "/data/TGSSE/UpdatedIntentions/detect_labels.yaml"
-        num_epochs = 100
+        num_epochs = 5000
         augment = True
         batch_size = 128
         n_kfolds = 5
         kernel_size = 8
         project_name = "cnn_trajectory_classificationXY"
         run_name = "100pad_0"
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        output_path = "drone_intent_statistics.png"
+        # output_path = "drone_intent_statistics.png"
 
-        # Load data
-        train_trajectories, train_labels, drone_classes, id2label, label2id, id2label_detailed = load_flight_data_single(data_path, intent_labels, detect_labels)
+        # # Load data
+        # train_trajectories, train_labels, drone_classes, id2label, label2id, id2label_detailed = load_flight_data_single(data_path, intent_labels, detect_labels)
 
-        # Plot and save statistics
-        plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path)
+        # # Plot and save statistics
+        # plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path)
         
     else:
         # Parse command-line arguments
@@ -84,10 +84,11 @@ def main():
         parser.add_argument('--run_name', type=str, default='mobilebert_run', help='Run name for wandb')
         parser.add_argument('--batch_size', type=int, default=8, help='Batch size for training')
         parser.add_argument('--kernel_size', type=int, default=8, help='Kernel size for CNN model')
+        parser.add_argument('--device', type=str, default='cuda', help='Device to use for training')
         args = parser.parse_args()
     
         # Definitions
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device(args.device if torch.cuda.is_available() else "cpu")
         data_path = args.data_path
         intent_labels = args.intent_labels
         detect_labels = args.detect_labels
@@ -120,8 +121,7 @@ def main():
     wandb.init(project=project_name, name=f"Overall_Labels_{run_name}", config=config)
     
     # Load dataset
-    # flight_data, flight_labels, _, id2label, label2id, id2label_detailed = load_flight_data_single(data_path, intent_labels, detect_labels, augment)
-    flight_data, flight_labels, _, id2label, label2id, id2label_detailed = load_flight_data(data_path, intent_labels, detect_labels, augment)
+    flight_data, flight_labels, _, id2label, _, _, _ = load_flight_data(data_path, intent_labels, detect_labels, augment)
     print(f"Total trajectories: {len(flight_data)}")
     
     # Split data into training and test sets
@@ -154,9 +154,8 @@ def main():
     
     # Iterate over folds
     for fold, (train_idx, val_idx) in enumerate(kf.split(flight_data)):
-        print(f"\nFold {fold+1}/{kf.n_splits}\n")
-        
         fold_start_time = time.time()
+        print(f"\nFold {fold+1}/{kf.n_splits}\n")
         
         # Initialize a new WandB run for each fold
         wandb.init(project=project_name, name=f"{run_name}_fold{fold+1}", config=config)

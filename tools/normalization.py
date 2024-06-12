@@ -55,22 +55,15 @@ def mean_removed_single(data):
     - mean_removed_data (numpy.ndarray): Trajectory data with mean removed along each dimension separately for each trajectory.
     """
     mean_removed_data = data.copy()
-    
+    dimensions = data.shape[2]
     for trajectory in mean_removed_data:
-        dimension_values = [[] for _ in range(data.shape[2])]
-        
-        # Extract values from the current trajectory for each dimension
-        for point in trajectory:
-            for i, value in enumerate(point):
-                dimension_values[i].append(value)
-        
-        # Calculate means for each dimension
-        dimension_means = [np.mean(values) for values in dimension_values]
-        
-        # Remove means from all points in the current trajectory
-        for point in trajectory:
-            for i, mean in enumerate(dimension_means):
-                point[i] -= mean
+        x_mean = np.mean(trajectory[:, 0])
+        trajectory[:, 0] -= x_mean
+        y_mean = np.mean(trajectory[:, 1])
+        trajectory[:, 1] -= y_mean
+        if dimensions == 3:
+            z_mean = np.mean(trajectory[:, 2])
+            trajectory[:, 2] -= z_mean
     
     return mean_removed_data
 
@@ -201,7 +194,7 @@ def compute_trajectory_stats(trajectories):
         'Average Length': np.mean(trajectory_lengths),
     }
     
-def normalize(data):
+def normalize_all(data):
     """
     Normalize the input data along each coordinate axis.
 
@@ -216,6 +209,30 @@ def normalize(data):
     
     # Normalize each coordinate axis separately
     normalized_data = data / max_values
+    
+    return normalized_data
+
+def normalize_single(data, **kwargs):
+    """
+    Normalize the input data along each coordinate axis.
+
+    Args:
+    data (np.ndarray): Input data with shape (num_samples, num_timesteps, num_dimensions).
+
+    Returns:
+    np.ndarray: Normalized data with the same shape as the input data.
+    """
+    # Determine the maximum values for each coordinate axis
+    dimensions = data.shape[2]
+    normalized_data = data.copy()
+    for trajectory in normalized_data:
+        x_max = kwargs.get("x_max", 480)
+        trajectory[:, 0] /= x_max
+        y_max = kwargs.get("y_max", 480)
+        trajectory[:, 1] /= y_max
+        if dimensions == 3:
+            z_max = kwargs.get("z_max", np.max(trajectory[:, 2]))
+            trajectory[:, 2] /= z_max
     
     return normalized_data
     
@@ -237,6 +254,6 @@ if __name__ == "__main__":
     
     # Example usage:
     data = np.array([[[100, 200, 300], [150, 250, 350]], [[50, 100, 150], [75, 125, 175]]])
-    normalized_data, max_values = normalize(data)
+    normalized_data, max_values = normalize_all(data)
     print("Normalized Data:\n", normalized_data)
     print("Max Values (x, y, z):", max_values)

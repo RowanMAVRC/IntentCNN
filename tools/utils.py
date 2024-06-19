@@ -5,7 +5,6 @@
 # Package Imports
 import numpy as np
 import matplotlib.pyplot as plt
-from tools.load_data import load_flight_data_single
 from captum.attr import IntegratedGradients
 import torch
 import torch.nn as nn

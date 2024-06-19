@@ -55,22 +55,16 @@ def mean_removed_single(data):
     - mean_removed_data (numpy.ndarray): Trajectory data with mean removed along each dimension separately for each trajectory.
     """
     mean_removed_data = data.copy()
-    
+    dimensions = data.shape[2]
+
     for trajectory in mean_removed_data:
-        dimension_values = [[] for _ in range(data.shape[2])]
-        
-        # Extract values from the current trajectory for each dimension
-        for point in trajectory:
-            for i, value in enumerate(point):
-                dimension_values[i].append(value)
-        
-        # Calculate means for each dimension
-        dimension_means = [np.mean(values) for values in dimension_values]
-        
-        # Remove means from all points in the current trajectory
-        for point in trajectory:
-            for i, mean in enumerate(dimension_means):
-                point[i] -= mean
+        x_mean = np.mean(trajectory[:, 0])
+        trajectory[:, 0] -= x_mean
+        y_mean = np.mean(trajectory[:, 1])
+        trajectory[:, 1] -= y_mean
+        if dimensions == 3:
+            z_mean = np.mean(trajectory[:, 2])
+            trajectory[:, 2] -= z_mean
     
     return mean_removed_data
 
@@ -94,11 +88,11 @@ def z_score_standardization_single(data):
         coordinates = trajectory[:, :3] if num_dimensions >= 3 else trajectory[:, :2]
 
         # Compute mean and standard deviation along each axis
-        mean = np.mean(coordinates, axis=0)  # Compute mean for the current trajectory
-        std_dev = np.std(coordinates, axis=0)  # Compute standard deviation for the current trajectory
+        mean = np.mean(coordinates, axis=0)
+        std_dev = np.std(coordinates, axis=0)
         
         # Check for zero standard deviations to avoid division by zero
-        std_dev[std_dev == 0] = 1  # Replace zero standard deviations with 1
+        std_dev[std_dev == 0] = 1
 
         # Perform z-score standardization for the current trajectory
         standardized_coordinates = (coordinates - mean) / std_dev
@@ -122,15 +116,16 @@ def z_score_standardization_all(data):
     - standardized_data (numpy.ndarray): Standardized trajectory data with the same shape as the input.
     """
     num_dimensions = data.shape[2]
+
     # Extract coordinates (x, y, z) for standardization
-    coordinates = data[:, :, :3] if num_dimensions >= 3 else data[:, :, :2]  # Extract the first 3 dimensions (x, y, z) if available
+    coordinates = data[:, :, :3] if num_dimensions >= 3 else data[:, :, :2]
 
     # Compute mean and standard deviation along each axis
-    mean = np.mean(coordinates, axis=(0, 1))  # Compute mean across all trajectories and time steps
-    std_dev = np.std(coordinates, axis=(0, 1))  # Compute standard deviation across all trajectories and time steps
+    mean = np.mean(coordinates, axis=(0, 1))
+    std_dev = np.std(coordinates, axis=(0, 1))
     
     # Check for zero standard deviations to avoid division by zero
-    std_dev[std_dev == 0] = 1  # Replace zero standard deviations with 1
+    std_dev[std_dev == 0] = 1
 
     # Perform z-score standardization
     standardized_coordinates = (coordinates - mean) / std_dev
@@ -155,17 +150,17 @@ def min_max_scaling(data):
     - scaled_data (numpy.ndarray): Scaled trajectory data with the same shape as the input.
     """
     # Extract coordinates (x, y, z) for scaling
-    coordinates = data[:, :, :3]  # Extract the first 3 dimensions (x, y, z)
+    coordinates = data[:, :, :3]
 
     # Compute min and max values along each axis
-    min_val = np.min(coordinates, axis=(0, 1))  # Compute minimum across all trajectories and time steps
-    max_val = np.max(coordinates, axis=(0, 1))  # Compute maximum across all trajectories and time steps
+    min_val = np.min(coordinates, axis=(0, 1))
+    max_val = np.max(coordinates, axis=(0, 1))
     
     # Compute range of values along each axis
     range_val = max_val - min_val
     
     # Check for zero range values to avoid division by zero
-    range_val[range_val == 0] = 1  # Replace zero range values with 1
+    range_val[range_val == 0] = 1
 
     # Perform min-max scaling
     scaled_coordinates = (coordinates - min_val) / range_val
@@ -177,6 +172,15 @@ def min_max_scaling(data):
     return scaled_data
 
 def compute_trajectory_stats(trajectories):
+    """
+    Compute statistics for the given trajectories.
+
+    Parameters:
+    - trajectories (numpy.ndarray): Input trajectory data with shape (num_trajectories, num_time_steps, num_dimensions).
+
+    Returns:
+    - stats (dict): Dictionary containing various statistics about the trajectories.
+    """
     num_trajectories = len(trajectories)
     trajectory_lengths = np.array([len(trajectory) for trajectory in trajectories])
     total_length = np.sum(trajectory_lengths)
@@ -200,16 +204,16 @@ def compute_trajectory_stats(trajectories):
         'Max Length': np.max(trajectory_lengths),
         'Average Length': np.mean(trajectory_lengths),
     }
-    
-def normalize(data):
+
+def normalize_all(data):
     """
     Normalize the input data along each coordinate axis.
 
-    Args:
-    data (np.ndarray): Input data with shape (num_samples, num_timesteps, num_dimensions).
+    Parameters:
+    - data (numpy.ndarray): Input data with shape (num_samples, num_timesteps, num_dimensions).
 
     Returns:
-    np.ndarray: Normalized data with the same shape as the input data.
+    - normalized_data (numpy.ndarray): Normalized data with the same shape as the input data.
     """
     # Determine the maximum values for each coordinate axis
     max_values = np.max(data, axis=(0, 1))
@@ -218,7 +222,41 @@ def normalize(data):
     normalized_data = data / max_values
     
     return normalized_data
+
+def normalize_single(data, **kwargs):
+    """
+    Normalize the input data along each coordinate axis.
+
+    Parameters:
+    - data (numpy.ndarray): Input data with shape (num_samples, num_timesteps, num_dimensions).
+
+    Returns:
+    - normalized_data (numpy.ndarray): Normalized data with the same shape as the input data.
+    """
+    # Determine the maximum values for each coordinate axis
+    dimensions = data.shape[2]
+    normalized_data = data.copy()
+
+    for trajectory in normalized_data:
+        x_max = kwargs.get('x_max', None)
+        if not x_max:
+            x_max = np.max(trajectory[:, 0])
+        trajectory[:, 0] /= x_max
+        y_max = kwargs.get('y_max', None)
+        if not y_max:
+            y_max = np.max(trajectory[:, 1])
+        trajectory[:, 1] /= y_max
+        if dimensions == 3:
+            z_max = kwargs.get('z_max', None)
+            if not z_max:
+                z_max = np.max(trajectory[:, 2])
+            trajectory[:, 2] /= z_max
     
+    return normalized_data    
+
+# ------------------------------------------------------------------------------------- #
+# Main
+# ------------------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
     # Example usage:
@@ -228,15 +266,17 @@ if __name__ == "__main__":
     num_points_per_trajectory = 50
     data = np.random.rand(num_trajectories, num_points_per_trajectory, 3)
 
+    # Test mean_removed_all function
     result = mean_removed_all(data)
     print("Original data shape:", data.shape)
-    print("Mean-removed data shape:", result.shape)
+    print("Mean-removed data shape (all trajectories):", result.shape)
+
+    # Test mean_removed_single function
     result = mean_removed_single(data)
     print("Original data shape:", data.shape)
-    print("Mean-removed data shape:", result.shape)
+    print("Mean-removed data shape (single trajectory):", result.shape)
     
-    # Example usage:
+    # Test normalize_all function
     data = np.array([[[100, 200, 300], [150, 250, 350]], [[50, 100, 150], [75, 125, 175]]])
-    normalized_data, max_values = normalize(data)
+    normalized_data = normalize_all(data)
     print("Normalized Data:\n", normalized_data)
-    print("Max Values (x, y, z):", max_values)

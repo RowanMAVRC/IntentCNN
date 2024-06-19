@@ -1,0 +1,77 @@
+nohup python3 cnn_main.py --device "cuda:1" --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_0 --run_name 800pad_0 --project_name IntentCNN_XY  > 800XY.out
+
+nohup python3 cnn_main.py --device "cuda:2" --data_path /data/TGSSE/UpdatedIntentions/XY/700pad_0 --run_name 700pad_0 --project_name IntentCNN_XY  > 700XY.out
+
+nohup python3 cnn_main.py --device "cuda:3" --data_path /data/TGSSE/UpdatedIntentions/XY/600pad_0 --run_name 600pad_0 --project_name IntentCNN_XY  > 600XY.out
+
+nohup python3 cnn_main.py --device "cuda:4" --data_path /data/TGSSE/UpdatedIntentions/XY/500pad_0 --run_name 500pad_0 --project_name IntentCNN_XY  > 500XY.out
+
+nohup python3 cnn_main.py --device "cuda:5" --data_path /data/TGSSE/UpdatedIntentions/XY/400pad_0 --run_name 400pad_0 --project_name IntentCNN_XY  > 400XY.out
+
+nohup python3 cnn_main.py --device "cuda:6" --data_path /data/TGSSE/UpdatedIntentions/XY/300pad_0 --run_name 300pad_0 --project_name IntentCNN_XY  > 300XY.out
+
+nohup python3 cnn_main.py --device "cuda:7" --data_path /data/TGSSE/UpdatedIntentions/XY/200pad_0 --run_name 200pad_0 --project_name IntentCNN_XY  > 200XY.out
+
+nohup python3 cnn_main.py --device "cuda:1" --data_path /data/TGSSE/UpdatedIntentions/XY/100pad_0 --run_name 100pad_0 --project_name IntentCNN_XY  > 100XY.out
+
+nohup python3 cnn_main.py --device "cuda:2" --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_33 --run_name 800pad_33 --project_name IntentCNN_XY  > 80033XY.out
+
+nohup python3 cnn_main.py --device "cuda:3" --data_path /data/TGSSE/UpdatedIntentions/XY/700pad_33 --run_name 700pad_33 --project_name IntentCNN_XY  > 70033XY.out
+
+nohup python3 cnn_main.py --device "cuda:4" --data_path /data/TGSSE/UpdatedIntentions/XY/600pad_33 --run_name 600pad_33 --project_name IntentCNN_XY  > 60033XY.out
+
+nohup python3 cnn_main.py --device "cuda:5" --data_path /data/TGSSE/UpdatedIntentions/XY/500pad_33 --run_name 500pad_33 --project_name IntentCNN_XY  > 50033XY.out
+
+nohup python3 cnn_main.py --device "cuda:6" --data_path /data/TGSSE/UpdatedIntentions/XY/400pad_33 --run_name 400pad_33 --project_name IntentCNN_XY  > 40033XY.out
+
+nohup python3 cnn_main.py --device "cuda:7" --data_path /data/TGSSE/UpdatedIntentions/XY/300pad_33 --run_name 300pad_33 --project_name IntentCNN_XY  > 30033XY.out
+
+nohup python3 cnn_main.py --device "cuda:2" --data_path /data/TGSSE/UpdatedIntentions/XY/200pad_33 --run_name 200pad_33 --project_name IntentCNN_XY  > 20033XY.out
+
+nohup python3 cnn_main.py --device "cuda:3" --data_path /data/TGSSE/UpdatedIntentions/XY/100pad_33 --run_name 100pad_33 --project_name IntentCNN_XY  > 10033XY.out
+
+nohup python3 cnn_main.py --device "cuda:4" --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad_66 --project_name IntentCNN_XY  > 80066XY.out
+
+nohup python3 cnn_main.py --device "cuda:5" --data_path /data/TGSSE/UpdatedIntentions/XY/700pad_66 --run_name 700pad_66 --project_name IntentCNN_XY  > 70066XY.out
+
+nohup python3 cnn_main.py --device "cuda:4" --data_path /data/TGSSE/UpdatedIntentions/XY/600pad_66 --run_name 600pad_66 --project_name IntentCNN_XY  > 60066XY.out
+
+nohup python3 cnn_main.py --device "cuda:5" --data_path /data/TGSSE/UpdatedIntentions/XY/500pad_66 --run_name 500pad_66 --project_name IntentCNN_XY  > 50066XY.out
+
+nohup python3 cnn_main.py --device "cuda:6" --data_path /data/TGSSE/UpdatedIntentions/XY/400pad_66 --run_name 400pad_66 --project_name IntentCNN_XY  > 40066XY.out
+
+nohup python3 cnn_main.py --device "cuda:7" --data_path /data/TGSSE/UpdatedIntentions/XY/300pad_66 --run_name 300pad_66 --project_name IntentCNN_XY  > 30066XY.out
+
+nohup python3 cnn_main.py --device "cuda:1" --data_path /data/TGSSE/UpdatedIntentions/XY/200pad_66 --run_name 200pad_66 --project_name IntentCNN_XY  > 20066XY.out
+
+nohup python3 cnn_main.py --device "cuda:2" --data_path /data/TGSSE/UpdatedIntentions/XY/100pad_66 --run_name 100pad_66 --project_name IntentCNN_XY  > 10066XY.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 2 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel2 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel2.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 4 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel4 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel4.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 6 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel6 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel6.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 10 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel10 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel10.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 12 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel12 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel12.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 14 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel14 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel14.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 16 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel16 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel16.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 18 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel18 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel18.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 20 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel20 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel20.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 30 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel30 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel30.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 40 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel40 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel40.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 50 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel50 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel50.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 60 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel60 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel60.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 70 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel70 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel70.out
+
+nohup python3 cnn_main.py --device "cuda:5" --kernel_size 80 --data_path /data/TGSSE/UpdatedIntentions/XY/800pad_66 --run_name 800pad66_kernel80 --project_name IntentCNN_XY_KERNEL  > 800pad66XY_kernel80.out

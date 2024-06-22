@@ -27,9 +27,10 @@ def plot_padding_statistics(padding_stats, data_file_path, max_length, min_lengt
     intentions = list(padding_stats.keys())
     total_paddings = [value['total_padding'] for value in padding_stats.values()]
     average_paddings = [value['total_padding'] / value['num_chunks'] for value in padding_stats.values()]
+    num_traj = [value['num_chunks'] for value in padding_stats.values()]
 
     plt.figure(figsize=(10, 6))
-    bars = plt.barh(intentions, total_paddings, color='skyblue', label='Total Padding')
+    bars = plt.barh(intentions, num_traj, color='skyblue', label='Num Trajectories')
     plt.bar_label(bars)
     bars = plt.barh(intentions, average_paddings, color='orange', alpha=0.5, label='Average Padding')
     plt.bar_label(bars)
@@ -41,9 +42,15 @@ def plot_padding_statistics(padding_stats, data_file_path, max_length, min_lengt
     if output_file:
         plt.savefig(output_file)
     else:
-        # Ensure the 'graphs' directory exists
-        os.makedirs('graphs', exist_ok=True)
-        plt.savefig(f'graphs/padding_statistics_{os.path.basename(data_file_path)}_{max_length}_{min_length}_{save_signature}.png')
+        base_name = os.path.basename(data_file_path).replace('.pickle', '')
+
+        # Creating a cascade of subfolders
+        folder_path = f'graphs/{base_name}/'
+        os.makedirs(folder_path, exist_ok=True)
+
+        # Save the plot to the specified folder
+        save_path = f'{folder_path}/{max_length}_{min_length}.png'
+        plt.savefig(save_path)
 
 def calculate_padding_statistics(sequences, max_length, min_length, data_file_path, save_signature):
     """
@@ -80,7 +87,14 @@ def calculate_padding_statistics(sequences, max_length, min_length, data_file_pa
 
             for i in range(num_chunks):
                 padding = max_length - (len(trajectory[i * (max_length - padding_per_chunk): (i + 1) * (max_length - padding_per_chunk) - min(i, extra_padding)]))
-                label = trajectory[0]['label']
+                label = trajectory[0]['label_detailed'].split("|")[0]
+                if label in ["HEX1", "QUAD"]:
+                    label = "ROTARY"
+                elif label in ["SWITCHBLADE", "BAYRAKTART2", "BAYRAKTAR"]:
+                    label = "FIXEDWING"
+                else:
+                    print(label, "is Unknown in calculate_padding_statistics")
+                    exit()
                 intention = trajectory[0]['intention']
                 key = f"{label} - {intention}"
                 if key not in padding_stats:
@@ -131,9 +145,17 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
     for id_intention, trajectories in sequences.items():
         for trajectory in trajectories:
             for frame in trajectory:
-                label = frame['label']
-                intention = frame['intention']
                 label_detailed = frame['label_detailed']
+                if label_detailed.split("|")[0] in ["HEX1", "QUAD"]:
+                    label = "ROTARY"
+                elif label_detailed.split("|")[0] in ["SWITCHBLADE", "BAYRAKTART2", "BAYRAKTAR"]:
+                    label = "FIXEDWING"
+                else:
+                    print(label_detailed.split("|")[0], "is Unknown in calculate_padding_statistics")
+                    exit()
+                    
+                intention = frame['intention']
+                
                 unique_label_intentions.add((label, intention))
                 unique_label_detailed.add(label_detailed)
     unique_label_intentions = sorted(unique_label_intentions)
@@ -145,8 +167,7 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
     label_detailed2num = {label_detailed: num for num, label_detailed in enumerate(unique_label_detailed)}
     num2label_detailed = {num: label_detailed for num, label_detailed in enumerate(unique_label_detailed)}
 
-    sequences_modified = []  # This will store the modified sequences
-
+    sequences_modified = []  
     # Modify trajectories to fit the desired length and format
     for id_intention, trajectories in sequences.items():
         for trajectory in trajectories:
@@ -171,9 +192,16 @@ def process_trajectories(data_file_path, save_signature, dimensions=3, max_lengt
                 
                 chunk = trajectory[start_index:end_index]
                 
-                label = chunk[0]['label']
-                intention = chunk[0]['intention']
                 label_detailed = chunk[0]['label_detailed']
+                if label_detailed.split("|")[0] in ["HEX1", "QUAD"]:
+                    label = "ROTARY"
+                elif label_detailed.split("|")[0] in ["SWITCHBLADE", "BAYRAKTART2", "BAYRAKTAR"]:
+                    label = "FIXEDWING"
+                else:
+                    print(label_detailed.split("|")[0], "is Unknown in calculate_padding_statistics")
+                    exit()
+
+                intention = chunk[0]['intention']
                 cls_num = str2num[f"{label} - {intention}"]
                 label_detailed_num = label_detailed2num[label_detailed]
                 
@@ -238,6 +266,7 @@ if __name__ == "__main__":
         "164544",
         "151221"
     ]
+    dimensions = [2, 3] # 2: XY, 3: XYZ
     min_factors = [0, 1/3, 2/3]
     # min_factors = [2/3]
     min_pad = 100
@@ -246,13 +275,19 @@ if __name__ == "__main__":
     total_runs = len(data_paths) * len(min_factors) * len(range(min_pad, max_pad, 100)) * 2
     current_run = 1
     
-    for i in range(min_pad, max_pad, 100):
+    for i in [800]: # range(min_pad, max_pad, 100):
         for min_factor in min_factors:
             for data_path, save_signature in zip(data_paths, save_signatures):
-                print(f"Run {current_run}/{total_runs}: Processing {data_path} with max_length={i}, min_factor={min_factor}, dimensions=3")
-                process_trajectories(data_path, save_signature, dimensions=3, max_length=i, min_factor=min_factor)
-                current_run += 1
+                for dim in dimensions:
 
-                print(f"Run {current_run}/{total_runs}: Processing {data_path} with max_length={i}, min_factor={min_factor}, dimensions=2")
-                process_trajectories(data_path, save_signature, dimensions=2, max_length=i, min_factor=min_factor)
-                current_run += 1
+                    print(f"Run {current_run}/{total_runs}: Processing {data_path} with max_length={i}, min_factor={min_factor}, dimensions={dim}")
+                    
+                    process_trajectories(
+                        data_path, 
+                        save_signature, 
+                        dimensions=dim, 
+                        max_length=i, 
+                        min_factor=min_factor
+                    )
+
+                    current_run += 1

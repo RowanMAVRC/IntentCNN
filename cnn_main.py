@@ -27,7 +27,7 @@ import wandb
 from sklearn.model_selection import KFold
 
 from tools.load_data import load_flight_data_single
-from cfgs.models.intentCNN import train_cnn, inference, prepare_dataloader
+from intentCNN import train_cnn, inference, prepare_dataloader
 from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
 
 # ------------------------------------------------------------------------------------- #
@@ -73,8 +73,9 @@ def load_and_split_data(data_path, intent_labels, detect_labels, augment, test_s
     - test_labels (numpy.ndarray): Test labels.
     - id2label (dict): Mapping from id to label.
     """
-    flight_data, flight_labels, _, id2label, _, _, _ = load_flight_data_single(data_path, intent_labels, detect_labels, augment,
-                                                                               kwargs={"x_max": 480, "y_max": 480})
+    flight_data, flight_labels, _, id2label, _, _, _ = load_flight_data_single(
+        data_path, intent_labels, detect_labels, augment,kwargs={"x_max": 480, "y_max": 480}
+    )
     print(f"Total trajectories: {len(flight_data)}")
 
     test_size = int(len(flight_data) * test_size_ratio)
@@ -131,11 +132,28 @@ def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2labe
         print(f"Training set size: {len(train_trajectories)}")
         print(f"Validation set size: {len(val_trajectories)}")
 
-        split_stat = generate_histogram_and_pie_chart_for_split(train_fold_labels, val_fold_labels, id2label, f'{config["run_name"]}_fold{fold + 1}')
+        split_stat = generate_histogram_and_pie_chart_for_split(
+            train_fold_labels, 
+            val_fold_labels, 
+            id2label, 
+            f'{config["run_name"]}_fold{fold + 1}'
+        )
+
         wandb.log({"Split Distribution": wandb.Image(split_stat)})
 
-        models[f'CNN_fold_{fold}'] = train_cnn(train_trajectories, train_fold_labels, val_trajectories, val_fold_labels, fold, f'{config["run_name"]}',
-                                               num_epochs=config["num_epochs"], batch_size=config["batch_size"], kernel_size=config["kernel_size"], device=config["device"])
+        models[f'CNN_fold_{fold}'] = train_cnn(
+            train_trajectories, 
+            train_fold_labels, 
+            val_trajectories, 
+            val_fold_labels, 
+            fold, 
+            f'{config["run_name"]}',
+            num_epochs=config["num_epochs"], 
+            batch_size=config["batch_size"], 
+            kernel_size=config["kernel_size"], 
+            device=config["device"],
+            id2label=id2label
+        )
 
         fold_end_time = time.time()
         fold_time = fold_end_time - fold_start_time
@@ -186,8 +204,13 @@ def main():
         "device": torch.device(args.device if torch.cuda.is_available() else "cpu")
     }
 
-    train_data, train_labels, test_data, test_labels, id2label = load_and_split_data(config["data_path"], config["intent_labels"], config["detect_labels"], config["augment"])
-    train_and_evaluate(train_data, train_labels, test_data, test_labels, id2label, config)
+    train_data, train_labels, test_data, test_labels, id2label = load_and_split_data(
+        config["data_path"], config["intent_labels"], config["detect_labels"], config["augment"]
+    )
+
+    train_and_evaluate(
+        train_data, train_labels, test_data, test_labels, id2label, config
+    )
 
 # ------------------------------------------------------------------------------------- #
 # Main

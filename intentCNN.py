@@ -204,7 +204,6 @@ def evaluate_model(model, data_loader, criterion, device, id2label,global2local_
         for inputs, labels in data_loader:
             inputs, labels = inputs.to(device), labels.to(device)
             
-
             masks = {"FIXEDWING" : (labels == 0) | (labels == 1), # Can be seen with print(id2label)
                      "ROTARY" : ~((labels == 0) | (labels == 1))}
 
@@ -388,7 +387,7 @@ def inference(model, data_loader, device):
 
     return all_preds
 
-def load_model(model_class, model_path, input_dim, output_dim, device):
+def load_model(model_class, model_path, input_dim, device, heads_info):
     """
     Loads a model from the specified path.
 
@@ -402,13 +401,13 @@ def load_model(model_class, model_path, input_dim, output_dim, device):
     Returns:
         nn.Module: Loaded model.
     """
-    model = model_class(input_dim, output_dim)
+    model = model_class(input_dim, heads_info)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
     model.eval()  # Set model to evaluation mode
     return model
 
-def predict(model, input_data, device):
+def predict(model, input_data, aircraft_id, device, local2global_label_map):
     """
     Performs prediction on new data using the trained model.
 
@@ -423,15 +422,15 @@ def predict(model, input_data, device):
     model.eval()  # Set model to evaluation mode
     
     # Convert input data to a PyTorch tensor and create a DataLoader
-    input_tensor = torch.tensor(input_data, dtype=torch.float32)
-    data_loader = torch.utils.data.DataLoader(input_tensor, batch_size=32, shuffle=False)
+    inputs = torch.tensor(input_data, dtype=torch.float32).to(device)
     
-    all_preds = []
     with torch.no_grad():  # Disable gradient computation
-        for inputs in data_loader:
-            inputs = inputs.to(device)
-            outputs = model(inputs)  # Forward pass
-            _, preds = torch.max(outputs, 1)  # Get predictions
-            all_preds.extend(preds.cpu().numpy())  # Store predictions
+        outputs = model(inputs, aircraft_id)  # Forward pass
+
+        _, local_preds = torch.max(outputs, 1)  # Get predictions
+        global_preds = torch.tensor(
+                [local2global_label_map[aircraft_id][local_pred.item()] for local_pred in local_preds], 
+                device=device
+            ).squeeze()
     
-    return np.array(all_preds)
+    return global_preds.item()

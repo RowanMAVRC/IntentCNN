@@ -63,7 +63,8 @@ def extract_and_preprocess_trajectories(trajectories, augment, normalization_fun
     Returns:
         tuple: Preprocessed trajectories and corresponding labels.
     """
-    drone_classes = [trajectory[0].copy() for trajectory in trajectories]
+    
+    drone_classes = [int(trajectory[0][0].copy()) for trajectory in trajectories]
     remaining_trajectories = np.array([trajectory[1:] for trajectory in trajectories])
 
     train_labels = [int(trajectory[0][0]) for trajectory in remaining_trajectories]
@@ -91,6 +92,7 @@ def load_labels(label_path, label_detailed_path):
     Returns:
         tuple: Mappings of labels to ids and detailed labels to ids.
     """
+
     with open(label_path, "r") as stream:
         id2label = yaml.safe_load(stream)
     label2id = {v: k for k, v in id2label.items()}
@@ -126,7 +128,7 @@ def load_flight_data(data_path, label_path, label_detailed_path, augment=False, 
     trajectories = load_trajectories(data_path)
     train_trajectories, train_labels, drone_classes = extract_and_preprocess_trajectories(trajectories, augment, normalization_func, mean_removal_func, **kwargs)
     id2label, label2id, id2label_detailed, label_detailed2id = load_labels(label_path, label_detailed_path)
-    
+
     return train_trajectories, train_labels, drone_classes, id2label, label2id, id2label_detailed, label_detailed2id
 
 def load_flight_data_single(data_path, label_path, label_detailed_path, augment=False, **kwargs):

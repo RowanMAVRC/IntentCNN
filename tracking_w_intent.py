@@ -2,20 +2,25 @@
 # Imports
 # ------------------------------------------------------------------------------------- #
 
+# Standard library imports
+import os
+import sys
 import time
+from collections import defaultdict, deque
 from datetime import timedelta
 import multiprocessing
-import os
-from collections import defaultdict, deque
-import sys
+
+# Third-party library imports
 import cv2
-from ultralytics import YOLO
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import numpy as np
+from ultralytics import YOLO
 
-import cfgs.models.intentCNN
+# Local module imports
+from intentCNN import load_model, predict, MultiHeadCNNModel
 from tools.normalization import normalize_single, mean_removed_single
+
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -118,7 +123,14 @@ def process_frame(frame, detect_model, tracker_path, cfg_path, verbose, device):
     Returns:
         tuple: (list of boxes, list of boxes in XYXY format, list of track IDs, list of track classes, numpy.ndarray of annotated frame)
     """
-    results = detect_model.track(source=frame, persist=True, tracker=tracker_path, cfg=cfg_path, verbose=verbose, device=device)
+    results = detect_model.track(
+        source=frame, 
+        persist=True, 
+        tracker=tracker_path, 
+        cfg=cfg_path, 
+        verbose=verbose, 
+        device=device
+    )
     boxes = results[0].boxes.xywh.cpu()
     boxesXYXY = results[0].boxes.xyxy.cpu()
     track_ids = results[0].boxes.id.int().cpu().tolist() if results[0].boxes.id is not None else []
@@ -144,6 +156,46 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
     start_time = time.monotonic()
     output_path = None  # Initialize output_path
 
+    yolo_label_dict = {
+        0: "ROTARY",        #  "HEX1",
+        1: "FIXEDWING",     #  "SWITCHBLADE",
+        2: "ROTARY",        #  "QUAD",
+        3: "FIXEDWING",     #  "BAYRAKTART2",
+        4: "FIXEDWING",     #  "EAGLE",
+        5: "FIXEDWING",     #  '787',
+        6: "ROTARY",        # "HELICOPTER1",
+        7: "FIXEDWING",     #  "CROW",
+        8: "ROTARY",        #  "HEX2",
+        9: "FIXEDWING",     #  "C130",
+        10: "FIXEDWING",     #  "MQ9REAPER",
+        11: "ROTARY",       #  "DJIINSPIRE"
+    }
+
+
+
+    global2local_label_map = {
+        0 : 0,  # 0: 'FIXEDWING - Kamikaze' -> 0
+        1 : 1,  # 1: 'FIXEDWING - Recon'    -> 1
+
+        2 : 0,  # 2: 'ROTARY - Area Denial' -> 0
+        3 : 1,  # 3: 'ROTARY - Recon'       -> 1
+        4 : 2   # 4: 'ROTARY - Travel'      -> 2
+    }
+
+    heads_info = {
+        'FIXEDWING': 2,
+        'ROTARY': 3,
+    }
+
+    def invert_dict(d):
+        return {v: [k for k in d if d[k] == v] for v in set(d.values())}
+
+    # Split and invert the dictionaries
+    local2global_label_map = {
+        "FIXEDWING" : invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[:2]}),
+        "ROTARY" : invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[2:]})
+    }
+
     try:
         paths = [detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path]
         for path in paths:
@@ -153,8 +205,13 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
         detect_model = YOLO(detect_path)
         id2label, label2id, id2label_detailed, label_detailed2id = load_labels(label_path, label_detailed_path)
 
-        intent_model = cfgs.models.intentCNN.load_model(cfgs.models.intentCNN.CNNModel, intent_path, dimensions, len(label2id), device="cuda:1")
-        intent_model.to("cuda:1")
+        intent_model = load_model(
+            MultiHeadCNNModel, 
+            intent_path, 
+            dimensions, 
+            device="cuda:1", 
+            heads_info=heads_info
+        )
 
         output_path = get_output_path(video_path)
         cap, output, input_fps, input_width, input_height = initialize_video_writer(video_path, output_path)
@@ -184,20 +241,28 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
                 break
 
             frame_counter += 1
-            boxes, boxesXYXY, track_ids, track_classes, annotated_frame = process_frame(frame, detect_model, tracker_path, cfg_path, verbose, device)
+            boxes, boxesXYXY, track_ids, track_classes, annotated_frame = process_frame(
+                frame, detect_model, tracker_path, cfg_path, verbose, device
+            )
             
             for box, boxXYXY, track_id, track_class in zip(boxes, boxesXYXY, track_ids, track_classes):
                 x, y, w, h = box
                 track = track_history[track_id]
                 track.append((float(x), float(y)))
+
                 if len(track) > num_track_frames // 3:
                     track.pop()
+
                 if plot_tracks:
                     points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                    cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
+                    cv2.polylines(
+                        annotated_frame, [points], isClosed=False, 
+                        color=(230, 230, 230), thickness=10
+                    )
                 
-                if track_class < 4:
+                if True:
                     trajectory = trajectory_history[track_id]
+
                     if dimensions == 2:
                         trajectory.append([x, y])
                     else:
@@ -220,17 +285,29 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
                         if trajectory_array.shape[1] < 100:
                             padding = np.zeros((trajectory_array.shape[0], 100 - trajectory_array.shape[1], trajectory_array.shape[2]))
                             trajectory_array = np.hstack((padding, trajectory_array))
-                        drone_class = np.array([[track_class] * dimensions]).reshape(1, 1, -1)
-                        trajectory_array = np.concatenate((drone_class, trajectory_array), axis=1)
-                        intent_results = cfgs.models.intentCNN.predict(intent_model, trajectory_array, device="cuda:1")
-                        intention = id2label[intent_results[0]].split(" - ")[1]
+
+                        aircraft_id = yolo_label_dict[track_class]
+                        intent_results = predict(
+                            intent_model, 
+                            trajectory_array, 
+                            aircraft_id, 
+                            "cuda:1", 
+                            local2global_label_map
+                        )
+                  
+                        intention = id2label[intent_results] # .split(" - ")[1]
                         intents[track_id].append(intention)
 
                         if verbose:
                             print(f"Predicted class of ID {track_id}: {intention}")
+                            
                     if intents[track_id]:
                         leftX, leftY, rightX, rightY = boxXYXY
-                        cv2.putText(annotated_frame, intents[track_id][-1], (int(leftX), int(leftY + 1.5 * h)), font, 0.7, (0, 0, 0), 1, cv2.LINE_AA)
+                        cv2.putText(
+                            annotated_frame, intents[track_id][-1], 
+                            (int(leftX), int(leftY + 1.5 * h)), 
+                            font, 0.7, (0, 0, 0), 1, cv2.LINE_AA
+                        )
             
             if show:
                 cv2.imshow("YOLOv8 Tracking", annotated_frame)
@@ -255,34 +332,59 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
 # ------------------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
-    batch = False
+    # Timing setup
     start_time = time.monotonic()
-    
-    detect_path = "/data/TGSSE/weights/detection/DyViR_Combined.pt"    
-    intent_path = "/home/cipoll17/IntentFormer/trained_models/100pad_0/fold_0.pth"
-    label_path = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
-    label_detailed_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/trajectory_with_intentions_800_pad_533_min_101108_label_detailed.yaml"
-    tracker_path = "cfgs/tracking/trackers/botsort_90.yaml"
-    cfg_path = "cfgs/tracking/botsort.yaml"
-    plot_tracks = False
+
+    # Device configuration
     device = "cuda:1"
+
+    # Path configurations
+    detect_path         = "/data/TGSSE/weights/detection/DyViR_Combined.pt"
+    intent_path         = "trained_models/800pad_0/fold_0.pth"
+    label_path          = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
+    label_detailed_path = "/data/TGSSE/UpdatedIntentions/XY/800pad_0/trajectory_with_intentions_800_pad_0_min_095823_label_detailed.yaml"
+    tracker_path        = "cfgs/tracking/trackers/botsort_90.yaml"
+    cfg_path            = "cfgs/tracking/botsort.yaml"
+    video_paths         = ["/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H/DyViR_DS_240410_095823_Optical_6D0A0B0H.mp4"]
+
+    # Visualization configurations
     show = False
-    
-    video_paths = ["/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H/DyViR_DS_240410_095823_Optical_6D0A0B0H.mp4"]
-    
+    plot_tracks = False
+
+    batch = False
     if batch:
+
         processes = []
         for video_path in video_paths:
-            process = multiprocessing.Process(target=intention_tracking, 
-                                              args=(detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path),
-                                              kwargs={"plot_tracks": plot_tracks, "device": device, "show": show})
+            
+            process = multiprocessing.Process(
+                target=intention_tracking, 
+                args=(detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path),
+                kwargs={"plot_tracks": plot_tracks, "device": device, "show": show}
+            )
+            
             processes.append(process)
+        
         for process in processes:
             process.start()
+        
         for process in processes:
             process.join()
+
     else:
-        intention_tracking(detect_path, intent_path, video_paths[0], label_path, label_detailed_path, tracker_path, cfg_path, plot_tracks=plot_tracks, device=device, show=show)
+        
+        intention_tracking(
+            detect_path, 
+            intent_path, 
+            video_paths[0], 
+            label_path, 
+            label_detailed_path, 
+            tracker_path, 
+            cfg_path, 
+            plot_tracks=plot_tracks, 
+            device=device, 
+            show=show
+        )
     
     cv2.destroyAllWindows()
     print("Total Runtime: " + str(timedelta(seconds=time.monotonic() - start_time)))

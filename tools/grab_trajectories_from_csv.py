@@ -114,26 +114,26 @@ def process_video_data(data_path: str, save_path: str) -> dict:
             for j in range(frame_info.shape[0]):
                 label = frame_info.loc[j, "label"]
                 label_detailed = frame_info.loc[j, "label_detailed"]
-                id = frame_info.loc[j, "id"]
+                object_id = frame_info.loc[j, "id"]
                 coords = ast.literal_eval(frame_info.loc[j, 'coords'])
                 depth = frame_info.loc[j, "depth_meters"]
                 intention = frame_info.loc[j, "intention"]
 
-                key = (id, intention)  # Unique key for each combination of ID and intention
+                key = (object_id, intention)  # Unique key for each combination of ID and intention
                 if key not in current_sequences:
                     current_sequences[key] = [[{
-                        'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                        'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': object_id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                     }]]
                 else:
                     # Check if current frame continues the last sequence or starts a new one
                     last_sequence = current_sequences[key][-1]
                     if last_sequence[-1]['frame'] == i - 1:  # Continues the sequence
                         last_sequence.append({
-                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': object_id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                         })
                     else:  # Starts a new sequence
                         current_sequences[key].append([{
-                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': id, 'coords': coords[:2], 'depth': depth, 'intention': intention
+                            'frame': i, 'label': label, 'label_detailed': label_detailed, 'id': object_id, 'coords': coords[:2], 'depth': depth, 'intention': intention
                         }])
 
         # Merge current sequences into global sequences
@@ -237,11 +237,11 @@ if __name__ == "__main__":
         "/data/TGSSE/UpdatedIntentions/DyViR_DS_240408_151221_Optical_6D0A0B0H"
     ]
     save_paths = [
-        '/data/TGSSE/UpdatedIntentions/101108.pickle',
-        '/data/TGSSE/UpdatedIntentions/173857.pickle',
-        '/data/TGSSE/UpdatedIntentions/095823.pickle',
-        '/data/TGSSE/UpdatedIntentions/164544.pickle',
-        '/data/TGSSE/UpdatedIntentions/151221.pickle'
+        '/data/TGSSE/UpdatedIntentionsWithAssets/101108.pickle',
+        '/data/TGSSE/UpdatedIntentionsWithAssets/173857.pickle',
+        '/data/TGSSE/UpdatedIntentionsWithAssets/095823.pickle',
+        '/data/TGSSE/UpdatedIntentionsWithAssets/164544.pickle',
+        '/data/TGSSE/UpdatedIntentionsWithAssets/151221.pickle'
     ]
     
     if len(data_paths) != len(save_paths):

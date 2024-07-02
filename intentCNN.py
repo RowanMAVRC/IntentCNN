@@ -99,7 +99,7 @@ class MultiHeadCNNModel(nn.Module):
 # Functions
 # ------------------------------------------------------------------------------------- #
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, fold, device, id2label,global2local_label_map):
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, fold, device, id2label, global2local_label_map):
     """
     Trains the model and logs training progress to WandB.
 
@@ -129,12 +129,14 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                     "ROTARY"    : ~((labels == 0) | (labels == 1))
                 }
 
-                optimizer.zero_grad()  # Reset gradie
+
+                optimizer.zero_grad()  # Reset gradients
                 loss = 0
                 for i, aircraft_id in enumerate(model.heads_info.keys()):
                     local_labels = torch.tensor(
                         [global2local_label_map[label.item()] for label in labels[masks[aircraft_id]]], 
-                        device=labels.device
+                        device=labels.device,
+                        dtype=torch.long  # Ensure local_labels are of type Long
                     )
                  
                     outputs = model(inputs[masks[aircraft_id]], aircraft_id)  # Forward pass for each aircraft
@@ -172,7 +174,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             })
     return model
 
-def evaluate_model(model, data_loader, criterion, device, id2label,global2local_label_map):
+
+
+def evaluate_model(model, data_loader, criterion, device, id2label, global2local_label_map):
     """
     Evaluates the model on the validation data.
 
@@ -195,7 +199,6 @@ def evaluate_model(model, data_loader, criterion, device, id2label,global2local_
         "ROTARY" : invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[2:]})
     }
 
-    
     model.eval()  # Set model to evaluation mode
     all_preds = []
     all_labels = []
@@ -208,18 +211,18 @@ def evaluate_model(model, data_loader, criterion, device, id2label,global2local_
                      "ROTARY" : ~((labels == 0) | (labels == 1))}
 
             loss = 0
-            global_preds = torch.empty_like(labels)
+            global_preds = torch.empty_like(labels, dtype=torch.long)  # Ensure dtype is long
             for i, aircraft_id in enumerate(model.heads_info.keys()):
-                local_labels = torch.tensor([global2local_label_map[label.item()] for label in labels[masks[aircraft_id]]], device=labels.device)
+                local_labels = torch.tensor([global2local_label_map[label.item()] for label in labels[masks[aircraft_id]]], device=labels.device, dtype=torch.long)
                 
                 outputs = model(inputs[masks[aircraft_id]], aircraft_id)  # Forward pass for each aircraft
                 loss += criterion(outputs, local_labels)  # Compute loss
 
                 _, local_preds = torch.max(outputs, 1)  # Get predictions
                 global_preds[masks[aircraft_id]] = torch.tensor(
-                        [local2global_label_map[aircraft_id][local_pred.item()] for local_pred in local_preds], 
-                        device=labels.device
-                    ).squeeze()
+                    [local2global_label_map[aircraft_id][local_pred.item()] for local_pred in local_preds], 
+                    device=labels.device, dtype=torch.long
+                ).squeeze()
             
             loss /= labels.size(0)
 
@@ -230,6 +233,9 @@ def evaluate_model(model, data_loader, criterion, device, id2label,global2local_
     
     accuracy = np.mean(np.array(all_preds) == np.array(all_labels))
     return total_loss / len(data_loader), accuracy
+
+
+
 
 def prepare_dataloader(trajectories, labels, batch_size=32, shuffle=True):
     """
@@ -348,7 +354,6 @@ def inference(model, data_loader, device):
     global2local_label_map = {
         0 : 0,  # 0: 'FIXEDWING - Kamikaze' -> 0
         1 : 1,  # 1: 'FIXEDWING - Recon'    -> 1
-
         2 : 0,  # 2: 'ROTARY - Area Denial' -> 0
         3 : 1,  # 3: 'ROTARY - Recon'       -> 1
         4 : 2   # 4: 'ROTARY - Travel'      -> 2
@@ -367,12 +372,12 @@ def inference(model, data_loader, device):
     all_preds = []
     with torch.no_grad():  # Disable gradient computation
         for inputs, labels in data_loader:
-            inputs = inputs.to(device)
+            inputs, labels = inputs.to(device), labels.to(device)
 
             masks = {"FIXEDWING" : (labels == 0) | (labels == 1), # Can be seen with print(id2label)
                      "ROTARY" : ~((labels == 0) | (labels == 1))}
 
-            global_preds = torch.zeros_like(labels)
+            global_preds = torch.zeros_like(labels, dtype=torch.long)  # Ensure dtype is long
             for i, aircraft_id in enumerate(model.heads_info.keys()):
                 outputs = model(inputs[masks[aircraft_id]], aircraft_id)  
 
@@ -380,12 +385,15 @@ def inference(model, data_loader, device):
                 
                 global_preds[masks[aircraft_id]] = torch.tensor(
                         [local2global_label_map[aircraft_id][local_pred.item()] for local_pred in local_preds], 
-                        device=labels.device
+                        device=labels.device,
+                        dtype=torch.long  # Ensure dtype is long
                     ).squeeze()
 
             all_preds.extend(global_preds.cpu().numpy())
 
     return all_preds
+
+
 
 def load_model(model_class, model_path, input_dim, device, heads_info):
     """

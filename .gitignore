@@ -171,3 +171,10 @@ wandb/
 *.pth
 
 .vscode/*
+
+cognitive_offloading_plot.tex
+mean_cognitive_offloading.csv
+std_cognitive_offloading.csv
+temp*
+threat_levels.csv
+

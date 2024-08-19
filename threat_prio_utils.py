@@ -83,6 +83,7 @@ def draw_bounding_box(frame, coords, label, intention, object_id, color, frame_h
             cv2.circle(frame, (point_x, point_y), 2, color, -1)
 
     # Prepare the text labels
+    bottom_text = f"Norm. Depth: {normalized_depth:.2f}\nNorm. Disp: {normalized_displacement:.2f}\nProb: {prob_of_interaction:.2f}\nThreat Level: {normalized_threat_level:.2f}"
     top_text = f"{label} | {intention} | Severity: {severity:.2f}"
     bottom_text = f"Norm. Depth: {normalized_depth:.2f}\nNorm. Disp: {normalized_displacement:.2f}\nProb: {prob_of_interaction:.2f}\nThreat Level: {normalized_threat_level:.2f}"
 
@@ -129,7 +130,8 @@ if __name__ == "__main__":
     data_path = "/data/TGSSE/DyViR Conference Paper 2024/Changing Intentions (10k)/SimData_2024-03-17__22-17-01_Optical"
     labels_filename = "SimData_2024-03-17__22-17-01_Optical.csv"
     mp4_filename = "SimData_2024-03-17__22-17-01_Optical.mp4"
-    output_filename = "output_video.mp4"  # Name of the output file
+    output_filename = "temp.mp4"  # Name of the output file
+    csv_output_filename = "threat_levels.csv"  # Name of the output CSV file
 
     labels_path = os.path.join(data_path, labels_filename)
     video_path = os.path.join(data_path, mp4_filename)
@@ -172,6 +174,9 @@ if __name__ == "__main__":
         # Determine a random frame number to save
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         random_frame_num = random.randint(1, total_frames)
+
+        # DataFrame to store threat levels
+        threat_levels_df = pd.DataFrame(columns=["frame", "object_id", "intention", "severity", "prob_of_interaction", "threat_level"])
 
         # Process and save the video
         frame_num = 0
@@ -222,6 +227,18 @@ if __name__ == "__main__":
                 # Calculate threat level
                 threat_level = prob_of_interaction * severity
                 threat_levels.append(threat_level)
+
+                # Store the threat level information in the DataFrame
+                new_row = pd.DataFrame([{
+                    "frame": frame_num,
+                    "object_id": object_id,
+                    "intention": intention,
+                    "severity": severity,
+                    "prob_of_interaction": prob_of_interaction,
+                    "threat_level": threat_level
+                }])
+
+                threat_levels_df = pd.concat([threat_levels_df, new_row], ignore_index=True)
 
             # Normalize the threat levels
             max_threat_level = max(threat_levels) if threat_levels else 1
@@ -277,4 +294,8 @@ if __name__ == "__main__":
         # Release video capture and writer objects
         cap.release()
         out.release()
+
+
+        threat_levels_df.to_csv(csv_output_filename, index=False)
+        print(f"Threat levels saved to {csv_output_filename}")
         print(f"Output video saved as {output_filename}")

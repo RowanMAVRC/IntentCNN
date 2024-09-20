@@ -150,36 +150,20 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
         label_detailed_path (str): Path to the detailed labels file.
         tracker_path (str): Path to the tracker configuration file.
         cfg_path (str): Path to the tracker configuration file.
-        dimensions (int, optional): Number of dimensions for intention prediction. Defaults to 3.
+        dimensions (int, optional): Number of dimensions for intention prediction. Defaults to 2.
         **kwargs: Additional keyword arguments.
     """
     start_time = time.monotonic()
-    output_path = None  # Initialize output_path
+    output_path = None
 
     yolo_label_dict = {
-        0: "ROTARY",        #  "HEX1",
-        1: "FIXEDWING",     #  "SWITCHBLADE",
-        2: "ROTARY",        #  "QUAD",
-        3: "FIXEDWING",     #  "BAYRAKTART2",
-        4: "FIXEDWING",     #  "EAGLE",
-        5: "FIXEDWING",     #  '787',
-        6: "ROTARY",        # "HELICOPTER1",
-        7: "FIXEDWING",     #  "CROW",
-        8: "ROTARY",        #  "HEX2",
-        9: "FIXEDWING",     #  "C130",
-        10: "FIXEDWING",     #  "MQ9REAPER",
-        11: "ROTARY",       #  "DJIINSPIRE"
+        0: "ROTARY", 1: "FIXEDWING", 2: "ROTARY", 3: "FIXEDWING", 4: "FIXEDWING", 
+        5: "FIXEDWING", 6: "ROTARY", 7: "FIXEDWING", 8: "ROTARY", 9: "FIXEDWING", 
+        10: "FIXEDWING", 11: "ROTARY"
     }
 
-
-
     global2local_label_map = {
-        0 : 0,  # 0: 'FIXEDWING - Kamikaze' -> 0
-        1 : 1,  # 1: 'FIXEDWING - Recon'    -> 1
-
-        2 : 0,  # 2: 'ROTARY - Area Denial' -> 0
-        3 : 1,  # 3: 'ROTARY - Recon'       -> 1
-        4 : 2   # 4: 'ROTARY - Travel'      -> 2
+        0: 0, 1: 1, 2: 0, 3: 1, 4: 2
     }
 
     heads_info = {
@@ -190,10 +174,9 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
     def invert_dict(d):
         return {v: [k for k in d if d[k] == v] for v in set(d.values())}
 
-    # Split and invert the dictionaries
     local2global_label_map = {
-        "FIXEDWING" : invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[:2]}),
-        "ROTARY" : invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[2:]})
+        "FIXEDWING": invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[:2]}),
+        "ROTARY": invert_dict({k: global2local_label_map[k] for k in list(global2local_label_map)[2:]})
     }
 
     try:
@@ -260,54 +243,52 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
                         color=(230, 230, 230), thickness=10
                     )
                 
-                if True:
-                    trajectory = trajectory_history[track_id]
+                trajectory = trajectory_history[track_id]
 
-                    if dimensions == 2:
-                        trajectory.append([x, y])
-                    else:
-                        frame_subset = frame_data[frame_data['frame'] == frame_counter]
-                        closest_distance = float('inf')
-                        for _, row in frame_subset.iterrows():
-                            actual_xyxy = [float(coord) for coord in row['coords'].strip("[]").split(", ")]
-                            distance = calculate_distance(actual_xyxy, boxXYXY)
-                            if distance < closest_distance:
-                                closest_distance = distance
-                                depth = row['depth_meters']
-                        trajectory.append([x, y, depth])
-                    
-                    if len(trajectory) > 9 and len(trajectory) % 25 == 0:
-                        trajectory_array = np.array(trajectory)
-                        if len(trajectory_array.shape) == 2:
-                            trajectory_array = trajectory_array[np.newaxis, :, :]
-                        trajectory_array = normalize_single(trajectory_array)
-                        trajectory_array = mean_removed_single(trajectory_array)
-                        if trajectory_array.shape[1] < 100:
-                            padding = np.zeros((trajectory_array.shape[0], 100 - trajectory_array.shape[1], trajectory_array.shape[2]))
-                            trajectory_array = np.hstack((padding, trajectory_array))
+                if dimensions == 2:
+                    trajectory.append([x, y])
+                else:
+                    frame_subset = frame_data[frame_data['frame'] == frame_counter]
+                    closest_distance = float('inf')
+                    for _, row in frame_subset.iterrows():
+                        actual_xyxy = [float(coord) for coord in row['coords'].strip("[]").split(", ")]
+                        distance = calculate_distance(actual_xyxy, boxXYXY)
+                        if distance < closest_distance:
+                            closest_distance = distance
+                            depth = row['depth_meters']
+                    trajectory.append([x, y, depth])
+                
+                if len(trajectory) > 9 and len(trajectory) % 25 == 0:
+                    trajectory_array = np.array(trajectory)
+                    if len(trajectory_array.shape) == 2:
+                        trajectory_array = trajectory_array[np.newaxis, :, :]
+                    trajectory_array = normalize_single(trajectory_array)
+                    trajectory_array = mean_removed_single(trajectory_array)
+                    if trajectory_array.shape[1] < 100:
+                        padding = np.zeros((trajectory_array.shape[0], 100 - trajectory_array.shape[1], trajectory_array.shape[2]))
+                        trajectory_array = np.hstack((padding, trajectory_array))
 
-                        aircraft_id = yolo_label_dict[track_class]
-                        intent_results = predict(
-                            intent_model, 
-                            trajectory_array, 
-                            aircraft_id, 
-                            "cuda:1", 
-                            local2global_label_map
-                        )
-                  
-                        intention = id2label[intent_results] # .split(" - ")[1]
-                        intents[track_id].append(intention)
+                    aircraft_id = yolo_label_dict[track_class]
+                    intent_results = predict(
+                        intent_model, 
+                        trajectory_array, 
+                        aircraft_id, 
+                        "cuda:1", 
+                        local2global_label_map
+                    )
+                    intention = id2label[intent_results]
+                    intents[track_id].append(intention)
 
-                        if verbose:
-                            print(f"Predicted class of ID {track_id}: {intention}")
-                            
-                    if intents[track_id]:
-                        leftX, leftY, rightX, rightY = boxXYXY
-                        cv2.putText(
-                            annotated_frame, intents[track_id][-1], 
-                            (int(leftX), int(leftY + 1.5 * h)), 
-                            font, 0.7, (0, 0, 0), 1, cv2.LINE_AA
-                        )
+                    if verbose:
+                        print(f"Predicted class of ID {track_id}: {intention}")
+                        
+                if intents[track_id]:
+                    leftX, leftY, rightX, rightY = boxXYXY
+                    cv2.putText(
+                        annotated_frame, intents[track_id][-1], 
+                        (int(leftX), int(leftY + 1.5 * h)), 
+                        font, 0.7, (0, 0, 0), 1, cv2.LINE_AA
+                    )
             
             if show:
                 cv2.imshow("YOLOv8 Tracking", annotated_frame)
@@ -353,16 +334,13 @@ if __name__ == "__main__":
 
     batch = False
     if batch:
-
         processes = []
         for video_path in video_paths:
-            
             process = multiprocessing.Process(
                 target=intention_tracking, 
                 args=(detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path),
                 kwargs={"plot_tracks": plot_tracks, "device": device, "show": show}
             )
-            
             processes.append(process)
         
         for process in processes:
@@ -372,7 +350,6 @@ if __name__ == "__main__":
             process.join()
 
     else:
-        
         intention_tracking(
             detect_path, 
             intent_path, 

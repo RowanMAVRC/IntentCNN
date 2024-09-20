@@ -36,23 +36,23 @@ from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and
 
 def parse_arguments():
     """
-    Parse command-line arguments or use debug configuration.
+    Parse command-line arguments or use default debug configuration.
 
     Returns:
-    - args (argparse.Namespace): Parsed command-line arguments or debug configuration.
+    - args (argparse.Namespace): Parsed command-line arguments.
     """
     parser = argparse.ArgumentParser(description='Flight Trajectory Classification')
-    parser.add_argument('--data_path', type=str, default="/data/TGSSE/UpdatedIntentions/XY/100pad_0", help='Path to trajectory data: Directory containing .pt files')
-    parser.add_argument('--intent_labels', type=str, default='/data/TGSSE/UpdatedIntentions/intent_labels.yaml', help='Path to labels data: .yaml file')
-    parser.add_argument('--detect_labels', type=str, default='/data/TGSSE/UpdatedIntentions/detect_labels.yaml', help='Path to detailed labels data: .yaml file')
-    parser.add_argument('--num_epochs', type=int, default=2000, help='Number of training epochs')
-    parser.add_argument('--augment', type=str, default='False', help='Whether to augment the data')
-    parser.add_argument('--n_kfolds', type=int, default=5, help='Number of splits for KFold cross-validation')
-    parser.add_argument('--project_name', type=str, default='cnn_trajectory_classificationXY', help='Project name for wandb')
-    parser.add_argument('--run_name', type=str, default='100pad_0', help='Run name for wandb')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
-    parser.add_argument('--kernel_size', type=int, default=8, help='Kernel size for CNN model')
-    parser.add_argument('--device', type=str, default='cuda', help='Device to use for training')
+    parser.add_argument('--data_path', type=str, default="/data/TGSSE/UpdatedIntentions/XY/100pad_0", help='Path to trajectory data (.pt files).')
+    parser.add_argument('--intent_labels', type=str, default='/data/TGSSE/UpdatedIntentions/intent_labels.yaml', help='Path to intent labels (.yaml file).')
+    parser.add_argument('--detect_labels', type=str, default='/data/TGSSE/UpdatedIntentions/detect_labels.yaml', help='Path to detailed detection labels (.yaml file).')
+    parser.add_argument('--num_epochs', type=int, default=2000, help='Number of training epochs.')
+    parser.add_argument('--augment', type=str, default='False', help='Flag to enable data augmentation.')
+    parser.add_argument('--n_kfolds', type=int, default=5, help='Number of splits for K-Fold cross-validation.')
+    parser.add_argument('--project_name', type=str, default='cnn_trajectory_classificationXY', help='Project name for Wandb tracking.')
+    parser.add_argument('--run_name', type=str, default='100pad_0', help='Run name for Wandb tracking.')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training.')
+    parser.add_argument('--kernel_size', type=int, default=8, help='Kernel size for CNN model.')
+    parser.add_argument('--device', type=str, default='cuda', help='Device to use for training (e.g., "cuda" or "cpu").')
     return parser.parse_args()
 
 def load_and_split_data(data_path, intent_labels, detect_labels, augment, test_size_ratio=0.1):
@@ -60,11 +60,11 @@ def load_and_split_data(data_path, intent_labels, detect_labels, augment, test_s
     Load and split data into training and test sets.
 
     Parameters:
-    - data_path (str): Path to the data.
-    - intent_labels (str): Path to the intent labels.
-    - detect_labels (str): Path to the detection labels.
-    - augment (bool): Whether to augment the data.
-    - test_size_ratio (float): Ratio of the test set size.
+    - data_path (str): Path to the data files.
+    - intent_labels (str): Path to the intent labels file.
+    - detect_labels (str): Path to the detection labels file.
+    - augment (bool): Whether to apply data augmentation.
+    - test_size_ratio (float): Proportion of data to be used for testing.
 
     Returns:
     - train_data (numpy.ndarray): Training data.
@@ -74,7 +74,7 @@ def load_and_split_data(data_path, intent_labels, detect_labels, augment, test_s
     - id2label (dict): Mapping from id to label.
     """
     flight_data, flight_labels, _, id2label, _, _, _ = load_flight_data_single(
-        data_path, intent_labels, detect_labels, augment,kwargs={"x_max": 480, "y_max": 480}
+        data_path, intent_labels, detect_labels, augment, kwargs={"x_max": 480, "y_max": 480}
     )
     print(f"Total trajectories: {len(flight_data)}")
 
@@ -96,7 +96,7 @@ def load_and_split_data(data_path, intent_labels, detect_labels, augment, test_s
 
 def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2label, config):
     """
-    Train and evaluate the model using K-Fold cross-validation.
+    Train and evaluate the CNN model using K-Fold cross-validation.
 
     Parameters:
     - train_data (numpy.ndarray): Training data.
@@ -104,13 +104,12 @@ def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2labe
     - test_data (numpy.ndarray): Test data.
     - test_labels (numpy.ndarray): Test labels.
     - id2label (dict): Mapping from id to label.
-    - config (dict): Configuration dictionary for WandB.
+    - config (dict): Configuration dictionary for WandB and model settings.
     """
     wandb.init(project=config["project_name"], group=config['run_name'], name=f"Overall_Labels_{config['run_name']}", config=config)
     
     stat_img = generate_histogram_and_pie_chart(train_labels, id2label, config["data_path"])
     wandb.log({"Overall Stats": [wandb.Image(stat_img)]})
-    
     wandb.finish()
 
     kf = KFold(n_splits=config["n_kfolds"], shuffle=True, random_state=42)
@@ -155,16 +154,14 @@ def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2labe
             id2label=id2label
         )
 
-        fold_end_time = time.time()
-        fold_time = fold_end_time - fold_start_time
+        fold_time = time.time() - fold_start_time
         print(f"Time taken for fold {fold + 1}: {fold_time:.2f} seconds")
 
         print(f"\nPerforming inference with CNN_fold_{fold} model...")
 
         inference_start_time = time.time()
         preds = inference(models[f'CNN_fold_{fold}'], prepare_dataloader(test_data, test_labels, batch_size=config["batch_size"], shuffle=False), device=config["device"])
-        inference_end_time = time.time()
-        inference_time = inference_end_time - inference_start_time
+        inference_time = time.time() - inference_start_time
         avg_inference_time = inference_time / len(test_labels)
 
         accuracy = np.mean(preds == test_labels)
@@ -175,8 +172,7 @@ def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2labe
 
         wandb.finish()
 
-    total_end_time = time.time()
-    total_time = total_end_time - total_start_time
+    total_time = time.time() - total_start_time
     avg_epoch_time = total_time / (config["num_epochs"] * config["n_kfolds"])
 
     print(f"\nTotal time taken for training: {total_time:.2f} seconds")
@@ -185,8 +181,8 @@ def train_and_evaluate(train_data, train_labels, test_data, test_labels, id2labe
 
 def main():
     """
-    Main function to set up the environment, parse arguments or use debug configuration,
-    and execute the training and evaluation of the CNN model using K-Fold cross-validation.
+    Main function to set up the environment, parse arguments, and execute 
+    the training and evaluation of the CNN model using K-Fold cross-validation.
     """
     args = parse_arguments()
 

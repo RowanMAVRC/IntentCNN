@@ -1,3 +1,19 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+
+## Summary
+This script sets up an environment for training a CNN-based deep learning model to classify flight trajectories.
+It utilizes PyTorch, sklearn, and Wandb for cross-validation and tracking. The data consists of flight trajectories,
+and the model predicts the intention of the object based on these trajectories. The script includes functions for 
+loading and preprocessing data, defining the model architecture, training the model, evaluating performance, and 
+running inference. It includes a multi-head CNN model (IntentCNN) for aircraft classification based on trajectory data.
+"""
+
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #

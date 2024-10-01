@@ -171,8 +171,8 @@ if __name__ == "__main__":
     debug = False
 
     if debug:
-        data_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66" 
-        labels_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
+        data_path = "IntentCNN/Useable/XYZ/800pad_66" 
+        labels_path = "IntentCNN/Useable/intent_labels.yaml"
         label_detailed_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/trajectory_with_intentions_800_pad_533_min_151221_label_detailed.yaml"
         num_train_epochs = 75
         learning_rate = 1e-3

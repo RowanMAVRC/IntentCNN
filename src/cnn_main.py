@@ -42,9 +42,9 @@ def parse_arguments():
     - args (argparse.Namespace): Parsed command-line arguments.
     """
     parser = argparse.ArgumentParser(description='Flight Trajectory Classification')
-    parser.add_argument('--data_path', type=str, default="/data/TGSSE/UpdatedIntentions/XY/100pad_0", help='Path to trajectory data (.pt files).')
-    parser.add_argument('--intent_labels', type=str, default='/data/TGSSE/UpdatedIntentions/intent_labels.yaml', help='Path to intent labels (.yaml file).')
-    parser.add_argument('--detect_labels', type=str, default='/data/TGSSE/UpdatedIntentions/detect_labels.yaml', help='Path to detailed detection labels (.yaml file).')
+    parser.add_argument('--data_path', type=str, default="IntentCNN/Useable/XY/100pad_0", help='Path to trajectory data (.pt files).')
+    parser.add_argument('--intent_labels', type=str, default='IntentCNN/intent_labels.yaml', help='Path to intent labels (.yaml file).')
+    parser.add_argument('--detect_labels', type=str, default='IntentCNN/detect_labels.yaml', help='Path to detailed detection labels (.yaml file).')
     parser.add_argument('--num_epochs', type=int, default=2000, help='Number of training epochs.')
     parser.add_argument('--augment', type=str, default='False', help='Flag to enable data augmentation.')
     parser.add_argument('--n_kfolds', type=int, default=5, help='Number of splits for K-Fold cross-validation.')

@@ -170,6 +170,10 @@ wandb/
 *.mp4
 *.pth
 
+data/*
+IntentCNN/*
+*.zip
+
 .vscode/*
 
 cognitive_offloading_plot.tex

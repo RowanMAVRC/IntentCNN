@@ -11,14 +11,14 @@ declare -A configs=(
 for pad in "${!configs[@]}"
 do
   device="${configs[$pad]}"
-  nohup python3 cnn_main.py --device "cuda:${device}" --data_path "/data/TGSSE/UpdatedIntentions/XY/${pad}" --run_name "${pad}" --project_name "IntentCNN_XY" > "${pad}XY.out" &
+  nohup python3 cnn_main.py --device "cuda:${device}" --data_path "IntentCNN/Useable/XY/${pad}" --run_name "${pad}" --project_name "IntentCNN_XY" > "out/${pad}XY.out" &
 done
 
 # Special configurations with kernel sizes
 declare -a kernels=(2 4 6 10 12 14 16 18 20 30 40 50 60 70 80)
 for kernel in "${kernels[@]}"
 do
-  nohup python3 cnn_main.py --device "cuda:5" --kernel_size "${kernel}" --data_path "/data/TGSSE/UpdatedIntentions/XY/800pad_66" --run_name "800pad66_kernel${kernel}" --project_name "IntentCNN_XY_KERNEL" > "800pad66XY_kernel${kernel}.out" &
+  nohup python3 cnn_main.py --device "cuda:5" --kernel_size "${kernel}" --data_path "IntentCNN/Useable/XY/800pad_66" --run_name "800pad66_kernel${kernel}" --project_name "IntentCNN_XY_KERNEL" > "800pad66XY_kernel${kernel}.out" &
 done
 
 echo "All commands have been executed in the background."

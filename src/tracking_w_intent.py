@@ -63,16 +63,15 @@ def calculate_distance(coord1, coord2):
     centroid2 = ((x3 + x4) / 2, (y3 + y4) / 2)
     return np.sqrt((centroid1[0] - centroid2[0])**2 + (centroid1[1] - centroid2[1])**2)
 
-def load_labels(label_path, label_detailed_path):
+def load_labels(label_path):
     """
     Load labels from files into dictionaries.
 
     Args:
         label_path (str): Path to the file containing labels.
-        label_detailed_path (str): Path to the file containing detailed labels.
 
     Returns:
-        tuple: (id2label, label2id, id2label_detailed, label_detailed2id)
+        tuple: (id2label, label2id)
     """
     id2label = {}
     with open(label_path, 'r') as file:
@@ -81,14 +80,7 @@ def load_labels(label_path, label_detailed_path):
             id2label[int(key)] = value.strip()
     label2id = {value: key for key, value in id2label.items()}
 
-    id2label_detailed = {}
-    with open(label_detailed_path, 'r') as file:
-        for line in file:
-            key, value = line.split(': ')
-            id2label_detailed[int(key)] = value.strip()
-    label_detailed2id = {value: key for key, value in id2label_detailed.items()}
-
-    return id2label, label2id, id2label_detailed, label_detailed2id
+    return id2label, label2id
 
 def initialize_video_writer(video_path, output_path):
     """
@@ -138,7 +130,7 @@ def process_frame(frame, detect_model, tracker_path, cfg_path, verbose, device):
     annotated_frame = results[0].plot(probs=False, conf=False)
     return boxes, boxesXYXY, track_ids, track_classes, annotated_frame
 
-def intention_tracking(detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path, dimensions=2, **kwargs):
+def intention_tracking(detect_path, intent_path, video_path, label_path, tracker_path, cfg_path, dimensions=2, **kwargs):
     """
     Perform object detection, tracking, and intention prediction on a video.
 
@@ -147,7 +139,6 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
         intent_path (str): Path to the intent model.
         video_path (str): Path to the input video file.
         label_path (str): Path to the labels file.
-        label_detailed_path (str): Path to the detailed labels file.
         tracker_path (str): Path to the tracker configuration file.
         cfg_path (str): Path to the tracker configuration file.
         dimensions (int, optional): Number of dimensions for intention prediction. Defaults to 2.
@@ -180,13 +171,13 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, label_d
     }
 
     try:
-        paths = [detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path]
+        paths = [detect_path, intent_path, video_path, label_path, tracker_path, cfg_path]
         for path in paths:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"The file {path} does not exist.")
         
         detect_model = YOLO(detect_path)
-        id2label, label2id, id2label_detailed, label_detailed2id = load_labels(label_path, label_detailed_path)
+        id2label, label2id = load_labels(label_path)
 
         intent_model = load_model(
             MultiHeadCNNModel, 
@@ -320,13 +311,12 @@ if __name__ == "__main__":
     device = "cuda:1"
 
     # Path configurations
-    detect_path         = "/data/TGSSE/weights/detection/DyViR_Combined.pt"
+    detect_path         = "IntentCNN/detection.pt"
     intent_path         = "trained_models/800pad_0/fold_0.pth"
-    label_path          = "/data/TGSSE/UpdatedIntentions/intent_labels.yaml"
-    label_detailed_path = "/data/TGSSE/UpdatedIntentions/XY/800pad_0/trajectory_with_intentions_800_pad_0_min_095823_label_detailed.yaml"
+    label_path          = "IntentCNN/detect_labels.yaml"
     tracker_path        = "cfgs/tracking/trackers/botsort_90.yaml"
     cfg_path            = "cfgs/tracking/botsort.yaml"
-    video_paths         = ["/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H/DyViR_DS_240410_095823_Optical_6D0A0B0H.mp4"]
+    video_paths         = ["IntentCNN/Raw/DyViR_DS_240408_151221_Optical_6D0A0B0H/DyViR_DS_240408_151221_Optical_6D0A0B0H.mp4"]
 
     # Visualization configurations
     show = False
@@ -338,7 +328,7 @@ if __name__ == "__main__":
         for video_path in video_paths:
             process = multiprocessing.Process(
                 target=intention_tracking, 
-                args=(detect_path, intent_path, video_path, label_path, label_detailed_path, tracker_path, cfg_path),
+                args=(detect_path, intent_path, video_path, label_path, tracker_path, cfg_path),
                 kwargs={"plot_tracks": plot_tracks, "device": device, "show": show}
             )
             processes.append(process)
@@ -354,8 +344,7 @@ if __name__ == "__main__":
             detect_path, 
             intent_path, 
             video_paths[0], 
-            label_path, 
-            label_detailed_path, 
+            label_path,  
             tracker_path, 
             cfg_path, 
             plot_tracks=plot_tracks, 

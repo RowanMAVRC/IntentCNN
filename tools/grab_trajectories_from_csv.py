@@ -6,6 +6,7 @@
 | |  | |/ ____ \  /  | | \ \| |____ 
 |_|  |_/_/    \_\/   |_|  \_\\_____|
 
+
 Python Script to Convert CSV and MP4 files to Trajectories
 
 The main steps include:
@@ -17,6 +18,7 @@ The main steps include:
 6. Saving the sequence data in a pickle file along with the calculated statistics.
 
 '''
+
 #-----------------------------------------------------------------------------#
 # Imports
 #-----------------------------------------------------------------------------#
@@ -230,18 +232,18 @@ if __name__ == "__main__":
 
     # Define the paths to the data and the save locations
     data_paths = [
-        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_101108_Optical_6D0A0B0H",
-        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_173857_Optical_6D0A0B0H",
-        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240410_095823_Optical_6D0A0B0H",
-        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240423_164544_Optical_6D0A0B0H",
-        "/data/TGSSE/UpdatedIntentions/DyViR_DS_240408_151221_Optical_6D0A0B0H"
+        "IntentCNN/Raw/DyViR_DS_240410_101108_Optical_6D0A0B0H",
+        "IntentCNN/Raw/DyViR_DS_240410_173857_Optical_6D0A0B0H",
+        "IntentCNN/Raw/DyViR_DS_240410_095823_Optical_6D0A0B0H",
+        "IntentCNN/Raw/DyViR_DS_240423_164544_Optical_6D0A0B0H",
+        "IntentCNN/Raw/DyViR_DS_240408_151221_Optical_6D0A0B0H"
     ]
     save_paths = [
-        '/data/TGSSE/UpdatedIntentionsWithAssets/101108.pickle',
-        '/data/TGSSE/UpdatedIntentionsWithAssets/173857.pickle',
-        '/data/TGSSE/UpdatedIntentionsWithAssets/095823.pickle',
-        '/data/TGSSE/UpdatedIntentionsWithAssets/164544.pickle',
-        '/data/TGSSE/UpdatedIntentionsWithAssets/151221.pickle'
+        'IntentCNN/Generated/Segmented/101108.pickle',
+        'IntentCNN/Generated/Segmented/173857.pickle',
+        'IntentCNN/Generated/Segmented/095823.pickle',
+        'IntentCNN/Generated/Segmented/164544.pickle',
+        'IntentCNN/Generated/Segmented/151221.pickle'
     ]
     
     if len(data_paths) != len(save_paths):

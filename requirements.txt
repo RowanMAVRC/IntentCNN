@@ -115,3 +115,5 @@ wandb==0.16.5
 xxhash==3.4.1
 yarl==1.9.4
 zipp==3.17.0
+multipledispatch==1.0.0
+captum==0.7.0

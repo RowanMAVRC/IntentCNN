@@ -18,7 +18,7 @@ from tqdm import tqdm
 from ultralytics import YOLO
 
 # Local module imports
-from intentCNN import load_model, predict, MultiHeadCNNModel
+from src.intentCNN import load_model, predict, MultiHeadCNNModel
 from tools.normalization import normalize_single, mean_removed_single
 
 
@@ -312,8 +312,8 @@ if __name__ == "__main__":
 
     # Path configurations
     detect_path         = "IntentCNN/detection.pt"
-    intent_path         = "trained_models/800pad_0/fold_0.pth"
-    label_path          = "IntentCNN/detect_labels.yaml"
+    intent_path         = "IntentCNN/intention.pth"
+    label_path          = "IntentCNN/intent_labels.yaml"
     tracker_path        = "cfgs/tracking/trackers/botsort_90.yaml"
     cfg_path            = "cfgs/tracking/botsort.yaml"
     video_paths         = ["IntentCNN/Raw/DyViR_DS_240408_151221_Optical_6D0A0B0H/DyViR_DS_240408_151221_Optical_6D0A0B0H.mp4"]

@@ -39,7 +39,7 @@ This file contains the main script for training the CNN model that is used for c
 ```bash
 python src/cnn_main.py --data_path <path_to_data> --epochs <number_of_epochs> --batch_size <batch_size> --save_model_path <path_to_save_model>
 ```
-Ensure you have the necessary trajectory data in the `data/` folder as mentioned earlier.
+Ensure you have the necessary trajectory data in the `IntentCNN/` folder as mentioned earlier.
 
 ### **2. `intentCNN.py`**
 This file contains the architecture for the multi-head convolutional neural network (CNN) model used for classifying drone intentions. The model is designed to handle different drone types, each type having its own head in the multi-headed CNN architecture. The `cnn_main.py` script will use this model for training and inference.
@@ -111,13 +111,31 @@ This folder contains configuration files used by the tracking algorithm (e.g., B
    pip install -r requirements.txt
     ```
 
-3. **Download and Prepare Data** Download the necessary data from [this link](https://drive.google.com/drive/folders/1chhkDlgXcXTwapc9j2JU7MgO1toZ6oF6?usp=drive_link) and place the files in the ```data/``` folder.
+3. **Download and Prepare Data** 
+  - **Download the Data:** Download the necessary data from [this link](https://drive.google.com/drive/folders/1chhkDlgXcXTwapc9j2JU7MgO1toZ6oF6?usp=drive_link) and place the .zip file in the project directory.
+  - **Unzip the Data:** Unzip the downloaded `.zip` file in the main project directory. This should create a folder named `IntentCNN`.
+  ```bash
+  # Assuming you've downloaded IntentCNN.zip to the project directory
+  unzip IntentCNN.zip
+  ```
+  - **Data Structure:** The `IntentCNN/` folder should contain all the necessary data for training the CNN model, including trajectory data and labels.
 
 4. **Prepare Model Weights**
-  - **Detection Model**: Download or train a YOLO model for drone detection. Place the model weights in the weights/detection/ directory.
-  - **Intent Model**: Ensure that a trained CNN model is available for predicting drone intentions. Place the weights in the trained_models/ directory.
+  - **Detection Model**: The YOLO model weights for drone detection are inside the `IntentCNN` folder under the file name `detection.pt`
+  - **Intent Model**: 
+    - If you have a pre-trained CNN model, place the weights in the `IntentCNN/` directory.
+    - If not, proceed to the next step to train the CNN model.
 
-5. **Run the Script** Use the following command to run the intention tracking on a sample video:
+5. **Train the CNN Model**
+Before running the detection and tracking script, you need to train the CNN model using the data in the `IntentCNN/` folder.
+```bash
+python src/cnn_main.py --data_path IntentCNN/ --epochs 50 --batch_size 32 --save_model_path trained_models/intent_cnn.pth
+```
+  - Replace `50` with the desired number of epochs.
+  - Replace `32` with the desired batcfh size.
+  - Move the model weights into the `IntentCNN/` directory when completed.
+
+6. **Run the Tracking and Intention Prediction Script** Use the following command to run the intention tracking on a sample video:
   ```bash
   python intent_tracking.py --detect_path <path_to_detection_model> --intent_path <path_to_intent_model> --video_path <path_to_video_file> --label_path <path_to_labels> --label_detailed_path <path_to_detailed_labels> --tracker_path <path_to_tracker_config> --cfg_path <path_to_tracker_cfg> --show True
   ```

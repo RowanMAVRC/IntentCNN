@@ -101,12 +101,12 @@ This folder contains configuration files used by the tracking algorithm (e.g., B
 
 1. **Clone the Repository**
    ```bash
-   git clone <repository_url>
-   cd <project_directory>
+   git clone https://github.com/RowanMAVRC/IntentCNN
+   cd IntentCNN/
     ```
 
 2. **Install Dependencies**
-   Make sure you have Python 3.8+ and install the necessary dependencies:
+   Make sure you have Python 3.8+ and install the necessary dependencies. It is reccomended to use a python environment manager of your choice (venv, conda, etc.). Make sure your environment is active before running the command below:
    ```bash
    pip install -r requirements.txt
     ```

@@ -129,15 +129,14 @@ This folder contains configuration files used by the tracking algorithm (e.g., B
 5. **Train the CNN Model**
 Before running the detection and tracking script, you need to train the CNN model using the data in the `IntentCNN/` folder.
 ```bash
-python src/cnn_main.py --data_path IntentCNN/ --epochs 50 --batch_size 32 --save_model_path trained_models/intent_cnn.pth
+python cnn_main.py --data_path IntentCNN/Useable/XY/800pad_66 --num_epochs 50 --batch_size 32
 ```
   - Replace `50` with the desired number of epochs.
-  - Replace `32` with the desired batcfh size.
-  - Move the model weights into the `IntentCNN/` directory when completed.
+  - Replace `32` with the desired batch size.
 
 6. **Run the Tracking and Intention Prediction Script** Use the following command to run the intention tracking on a sample video:
   ```bash
-  python intent_tracking.py --detect_path <path_to_detection_model> --intent_path <path_to_intent_model> --video_path <path_to_video_file> --label_path <path_to_labels> --label_detailed_path <path_to_detailed_labels> --tracker_path <path_to_tracker_config> --cfg_path <path_to_tracker_cfg> --show True
+  python tracking_w_intent.py
   ```
 
 6. **Batch Processing (Optional)** If you have multiple videos to process in batch mode, modify the video_paths list in intent_tracking.py to include multiple video files, then run the script in batch mode.

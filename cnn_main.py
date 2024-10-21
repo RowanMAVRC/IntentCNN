@@ -27,7 +27,7 @@ import wandb
 from sklearn.model_selection import KFold
 
 from tools.load_data import load_flight_data_single
-from intentCNN import train_cnn, inference, prepare_dataloader
+from src.intentCNN import train_cnn, inference, prepare_dataloader
 from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
 
 # ------------------------------------------------------------------------------------- #

@@ -1,3 +1,11 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -27,6 +35,7 @@ def validate_paths(*paths):
         if not os.path.exists(path) or not path:
             raise FileNotFoundError(f"Path '{path}' does not exist.")
 
+
 def load_trajectories(data_path):
     """
     Load trajectory data from .pt files.
@@ -48,6 +57,7 @@ def load_trajectories(data_path):
         trajectories.extend(trajectory)
 
     return np.array(trajectories)
+
 
 def extract_and_preprocess_trajectories(trajectories, augment, normalization_func, mean_removal_func, **kwargs):
     """
@@ -81,6 +91,7 @@ def extract_and_preprocess_trajectories(trajectories, augment, normalization_fun
 
     return np.array(mean_removed_trajectories), train_labels, drone_classes
 
+
 def load_labels(label_path, label_detailed_path):
     """
     Load label data from yaml files.
@@ -102,6 +113,7 @@ def load_labels(label_path, label_detailed_path):
     label_detailed2id = {v: k for k, v in id2label_detailed.items()}
 
     return id2label, label2id, id2label_detailed, label_detailed2id
+
 
 def load_flight_data(data_path, label_path, label_detailed_path, augment=False, normalization_func=normalize_single, mean_removal_func=mean_removed_single, **kwargs):
     """
@@ -131,6 +143,7 @@ def load_flight_data(data_path, label_path, label_detailed_path, augment=False, 
 
     return train_trajectories, train_labels, drone_classes, id2label, label2id, id2label_detailed, label_detailed2id
 
+
 def load_flight_data_single(data_path, label_path, label_detailed_path, augment=False, **kwargs):
     """
     Wrapper for load_flight_data with single trajectory normalization and mean removal functions.
@@ -145,6 +158,7 @@ def load_flight_data_single(data_path, label_path, label_detailed_path, augment=
         tuple: Preprocessed trajectories and associated label information.
     """
     return load_flight_data(data_path, label_path, label_detailed_path, augment, normalize_single, mean_removed_single, **kwargs)
+
 
 def load_flight_data_all(data_path, label_path, label_detailed_path, augment=False):
     """

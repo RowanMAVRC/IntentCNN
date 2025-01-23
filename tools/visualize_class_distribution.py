@@ -1,8 +1,24 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
+# ------------------------------------------------------------------------------------- #
+# Imports
+# ------------------------------------------------------------------------------------- #
+
 import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+
+# ------------------------------------------------------------------------------------- #
+# Functions
+# ------------------------------------------------------------------------------------- #
 
 def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
     """
@@ -52,6 +68,7 @@ def plot_label_statistics(labels_tensor, label_mapping, save_path, file_name):
     plt.savefig(save_path)
     plt.close()
 
+
 def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_path):
     """
     Plot label statistics across multiple datasets.
@@ -100,6 +117,7 @@ def plot_all_label_statistics(label_tensors, label_mappings, path_names, save_pa
     plt.savefig(save_path)
     plt.close()
 
+
 def get_files_recursive(root_dir, extension='.pt'):
     """
     Recursively get all files with a given extension in a directory.
@@ -118,36 +136,41 @@ def get_files_recursive(root_dir, extension='.pt'):
                 files.append(os.path.join(dirpath, filename))
     return files
 
-# Define root directory and get file paths
-root_directory = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66"
-paths = get_files_recursive(root_directory)
+# ------------------------------------------------------------------------------------- #
+# Main
+# ------------------------------------------------------------------------------------- #
 
-# Define label mapping
-label_mapping = {
-    0: 'DRONE - Area Denial',
-    1: 'DRONE - Kamikaze',
-    2: 'DRONE - Recon',
-    3: 'DRONE - Travel'
-}
+if __name__ == "__main__":
+    # Define root directory and get file paths
+    root_directory = "IntentCNN/Useable/XYZ/800pad_66"
+    paths = get_files_recursive(root_directory)
 
-label_tensors = []
-label_mappings = []
+    # Define label mapping
+    label_mapping = {
+        0: 'DRONE - Area Denial',
+        1: 'DRONE - Kamikaze',
+        2: 'DRONE - Recon',
+        3: 'DRONE - Travel'
+    }
 
-# Load data, process labels, and plot statistics for each file
-for i, path in enumerate(paths):
-    data = torch.load(path)
-    labels = data[:, 0, 0].view(-1)
-    label_tensors.append(labels)
+    label_tensors = []
+    label_mappings = []
 
-    # Load label mapping from YAML file
-    yaml_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
-    with open(yaml_path, 'r') as file:
-        label_mapping = yaml.safe_load(file)
+    # Load data, process labels, and plot statistics for each file
+    for i, path in enumerate(paths):
+        data = torch.load(path)
+        labels = data[:, 0, 0].view(-1)
+        label_tensors.append(labels)
 
-    label_mappings.append(label_mapping)
+        # Load label mapping from YAML file
+        yaml_path = "/data/TGSSE/UpdatedIntentions/labels.yaml"
+        with open(yaml_path, 'r') as file:
+            label_mapping = yaml.safe_load(file)
 
-    # Plot label statistics for the current file
-    plot_label_statistics(labels, label_mapping, f"temp{i}.png", os.path.basename(path))
+        label_mappings.append(label_mapping)
 
-# Plot overall label statistics across all files
-plot_all_label_statistics(label_tensors, label_mappings, paths, f"temp{i+1}.png")
+        # Plot label statistics for the current file
+        plot_label_statistics(labels, label_mapping, f"temp{i}.png", os.path.basename(path))
+
+    # Plot overall label statistics across all files
+    plot_all_label_statistics(label_tensors, label_mappings, paths, f"temp{i+1}.png")

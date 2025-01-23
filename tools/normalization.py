@@ -1,3 +1,11 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -44,6 +52,7 @@ def mean_removed_all(data):
 
     return mean_removed_data
 
+
 def mean_removed_single(data):
     """
     Remove the mean of each dimension separately for each trajectory.
@@ -67,6 +76,7 @@ def mean_removed_single(data):
             trajectory[:, 2] -= z_mean
     
     return mean_removed_data
+
 
 def z_score_standardization_single(data):
     """
@@ -105,6 +115,7 @@ def z_score_standardization_single(data):
 
     return standardized_data
 
+
 def z_score_standardization_all(data):
     """
     Perform Z-score standardization on the given trajectory data.
@@ -139,6 +150,7 @@ def z_score_standardization_all(data):
 
     return standardized_data
 
+
 def min_max_scaling(data):
     """
     Perform min-max scaling on the given trajectory data.
@@ -170,6 +182,7 @@ def min_max_scaling(data):
     scaled_data[:, :, :3] = scaled_coordinates
 
     return scaled_data
+
 
 def compute_trajectory_stats(trajectories):
     """
@@ -205,6 +218,7 @@ def compute_trajectory_stats(trajectories):
         'Average Length': np.mean(trajectory_lengths),
     }
 
+
 def normalize_all(data):
     """
     Normalize the input data along each coordinate axis.
@@ -222,6 +236,7 @@ def normalize_all(data):
     normalized_data = data / max_values
     
     return normalized_data
+
 
 def normalize_single(data, **kwargs):
     """

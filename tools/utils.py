@@ -1,3 +1,11 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -54,6 +62,7 @@ def plot_and_log_statistics(train_labels: list, id2label: dict) -> tuple:
     
     return hist_img, pie_img
 
+
 def generate_histogram_and_pie_chart(labels, label_mapping, file_name):
     """
     Generate a histogram and a pie chart for label distribution.
@@ -95,6 +104,7 @@ def generate_histogram_and_pie_chart(labels, label_mapping, file_name):
     plt.close(fig)
     
     return fig_img
+
 
 def generate_histogram_and_pie_chart_for_split(train_labels, val_labels, label_mapping, file_name):
     """
@@ -146,6 +156,7 @@ def generate_histogram_and_pie_chart_for_split(train_labels, val_labels, label_m
     
     return fig_img
 
+
 def plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes, id2label, id2label_detailed, output_path):
     """
     Plot a bar graph where each drone class has a bar for each intent class, showing how many sequences are of that drone class doing that intention.
@@ -186,6 +197,7 @@ def plot_drone_intent_statistics(train_trajectories, train_labels, drone_classes
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
+    
     
 def generate_and_save_attribution_map(model, input_data, target_class, output_path):
     """

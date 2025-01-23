@@ -13,7 +13,6 @@ and the model predicts the intention of the object based on these trajectories. 
 loading and preprocessing data, defining the model architecture, training the model, evaluating performance, and 
 running inference. It includes a multi-head CNN model (IntentCNN) for aircraft classification based on trajectory data.
 """
-
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -68,6 +67,7 @@ class CNNModel(nn.Module):
         x = self.dropout(x)  # Apply dropout
         x = self.fc(x)  # Apply fully connected layer
         return x
+    
     
 class MultiHeadCNNModel(nn.Module):
     """
@@ -191,7 +191,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
     return model
 
 
-
 def evaluate_model(model, data_loader, criterion, device, id2label, global2local_label_map):
     """
     Evaluates the model on the validation data.
@@ -251,8 +250,6 @@ def evaluate_model(model, data_loader, criterion, device, id2label, global2local
     return total_loss / len(data_loader), accuracy
 
 
-
-
 def prepare_dataloader(trajectories, labels, batch_size=32, shuffle=True):
     """
     Prepares the DataLoader for training and validation datasets.
@@ -279,6 +276,7 @@ def prepare_dataloader(trajectories, labels, batch_size=32, shuffle=True):
 
     dataset = FlightDataset(trajectories, labels)
     return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
 
 def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, model_name, 
               device, id2label, lr=0.001, num_epochs=10, batch_size=32, kernel_size=8,):
@@ -354,6 +352,7 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
     print(f"Finished training CNN model for fold {fold}.")
     return model
 
+
 def inference(model, data_loader, device):
     """
     Performs inference on the validation data.
@@ -410,7 +409,6 @@ def inference(model, data_loader, device):
     return all_preds
 
 
-
 def load_model(model_class, model_path, input_dim, device, heads_info):
     """
     Loads a model from the specified path.
@@ -430,6 +428,7 @@ def load_model(model_class, model_path, input_dim, device, heads_info):
     model.to(device)
     model.eval()  # Set model to evaluation mode
     return model
+
 
 def predict(model, input_data, aircraft_id, device, local2global_label_map):
     """

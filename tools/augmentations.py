@@ -1,5 +1,21 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
+# ------------------------------------------------------------------------------------- #
+# Imports
+# ------------------------------------------------------------------------------------- #
+
 import numpy as np
 from multipledispatch import dispatch
+
+# ------------------------------------------------------------------------------------- #
+# Functions
+# ------------------------------------------------------------------------------------- #
 
 @dispatch(np.ndarray)
 def flip_trajectories_x(data):
@@ -17,6 +33,7 @@ def flip_trajectories_x(data):
     # Flip the x-coordinates (assumed to be the first dimension in the trajectory data)
     flipped_data[:, :, 0] = -flipped_data[:, :, 0]  
     return flipped_data
+
 
 @dispatch(np.ndarray, list, list)
 def flip_trajectories_x(data, labels, classes=None):
@@ -47,6 +64,7 @@ def flip_trajectories_x(data, labels, classes=None):
     new_labels = [label for label, m in zip(labels, mask) if m]
     
     return flipped_data, new_labels
+
 
 def augment_trajectories(data, rotation_range=(-10, 10), translation_range=(-5, 5), noise_std=0.1):
     """
@@ -79,6 +97,7 @@ def augment_trajectories(data, rotation_range=(-10, 10), translation_range=(-5, 
 
     return augmented_data
 
+
 def augment_with_jitters(trajectory, jitter_magnitude=0.1, num_augmentations=1):
     """
     Apply random jitters (Gaussian noise) to a given trajectory.
@@ -93,6 +112,10 @@ def augment_with_jitters(trajectory, jitter_magnitude=0.1, num_augmentations=1):
     """
     # Create multiple jittered trajectories
     return [trajectory + np.random.normal(loc=0, scale=jitter_magnitude, size=trajectory.shape) for _ in range(num_augmentations)]
+
+# ------------------------------------------------------------------------------------- #
+# Main
+# ------------------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
     # Example usage:

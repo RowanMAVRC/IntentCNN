@@ -14,6 +14,7 @@ def calculate_normalized_depth(depth, max_depth):
     """Calculate normalized depth given the current depth and maximum depth."""
     return depth / max_depth
 
+
 # Function to calculate normalized displacement
 def calculate_normalized_displacement(trajectory, frame_width, frame_height):
     """Calculate normalized displacement given a trajectory and frame dimensions."""
@@ -24,6 +25,7 @@ def calculate_normalized_displacement(trajectory, frame_width, frame_height):
     xy_displacement = np.sqrt(displacement_x**2 + displacement_y**2)
     diagonal = np.sqrt(frame_width**2 + frame_height**2)
     return xy_displacement / diagonal
+
 
 # Function to calculate the probability of interaction
 def calculate_probability_of_interaction(intention, trajectory, frame_width, frame_height, depth, max_depth):
@@ -38,6 +40,7 @@ def calculate_probability_of_interaction(intention, trajectory, frame_width, fra
         return max(0.01, (1 - normalized_displacement) * (1 - normalized_depth))
     else:
         return 0.01
+
 
 def draw_bounding_box(frame, coords, label, intention, object_id, color, frame_height, normalized_depth, normalized_displacement, severity, prob_of_interaction, normalized_threat_level, current_frame_num):
     cx, cy, w, h = coords
@@ -102,6 +105,7 @@ def draw_bounding_box(frame, coords, label, intention, object_id, color, frame_h
     # Update the last seen frame for this object
     object_last_seen[object_id] = current_frame_num
 
+
 def remove_stale_objects(current_frame_num, max_frames=5):
     global object_trajectories, object_last_seen
 
@@ -113,6 +117,7 @@ def remove_stale_objects(current_frame_num, max_frames=5):
             del object_trajectories[obj_id]
         if obj_id in object_last_seen:
             del object_last_seen[obj_id]
+
 
 def save_frame(frame, frame_num):
     save_dir = "prob_of_interaction_visuals"

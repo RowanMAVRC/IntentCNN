@@ -1,7 +1,6 @@
-# **Drone Intention Detection System**
+# **Drone Intention & Detection System**
 
 ## **Project Overview**
-
 This project is a comprehensive solution for detecting, tracking, and classifying the intention of drones using a multi-headed CNN model integrated with a YOLO object detection model. The system processes video inputs, detects and tracks drones, and predicts their intentions based on flight trajectory data. The project also supports augmenting trajectory data and uses a multi-headed convolutional neural network (CNN) to handle different drone types.
 
 ### **Main Features**
@@ -9,27 +8,53 @@ This project is a comprehensive solution for detecting, tracking, and classifyin
 - **Intention Prediction:** Based on drone trajectories, a multi-head CNN predicts the intention of drones (Recon, Kamikaze, Area Denial, etc.).
 - **Visualization:** The system can visualize drone trajectories and predicted intentions on video frames.
 
-## **Prerequisites**
+## **How to Run the Project**
 
-Before running the project, ensure you have installed the following dependencies:
-- Python 3.8+
-- CUDA-enabled GPU with PyTorch installed for faster processing (optional but recommended)
-- YOLOv8 for object detection and tracking
-- Various Python libraries such as:
-  - `numpy`
-  - `pandas`
-  - `torch`
-  - `opencv-python`
-  - `tqdm`
-  - `yaml`
-  - `multiprocessing`
-  - `ultralytics` (for YOLO)
-  
-Install the dependencies by running:
+1. **Clone the Repository**
+    ```bash
+    git clone https://github.com/RowanMAVRC/IntentCNN
+    cd IntentCNN/
+    ```
 
-```bash
-pip install -r requirements.txt
-```
+2. **Install Dependencies**
+    Make sure you have Python>=3.8,<3.12 and install the necessary dependencies. It is reccomended to use a python environment manager of your choice (venv, conda, etc.). Make sure your environment is active before running the command below:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Download and Prepare Data** 
+    - **Download the Data:** Download the necessary data from [this link](https://drive.google.com/drive/folders/1chhkDlgXcXTwapc9j2JU7MgO1toZ6oF6?usp=drive_link) and place the .zip file in the project directory. You can either download just the .zip file or the entire folder through drive.
+    - **Unzip the Data:** Unzip the downloaded `.zip` file in the main project directory. This should create a folder named `IntentCNN`.
+    ```bash
+    # Assuming you've downloaded IntentCNN.zip to the project directory
+    unzip IntentCNN.zip
+    ```
+    - **Data Structure:** The `IntentCNN/` folder should contain all the necessary data for training the CNN model, including trajectory data and labels.
+
+4. **Prepare Model Weights**
+    - **Detection Model**: The YOLO model weights for drone detection are inside the `IntentCNN/Weights/detection_models` folder under the file name `detection.pt`
+    - **Intent Model**: 
+      - Every intention model weight used for the experiment are inside the `IntentCNN/Weights/intention_models` folder.
+      - If you plan to train your own model, proceed to the next step to train the CNN model.
+
+5. **Train the CNN Model**
+    Below is the command used to train a CNN model using the data in the `IntentCNN/` folder.
+    ```bash
+    python cnn_main.py --data_path IntentCNN/Useable/XY/800pad_66 --num_epochs 50 --batch_size 32
+    ```
+      - Put the desired Useable data folder as the datapath.
+      - Put with the desired number of epochs.
+      - Put the desired batch size.
+
+6. **Run the Tracking and Intention Prediction Script** Use the following command to run the intention tracking on a sample video:
+    ```bash
+    python tracking_w_intent.py
+    ```
+
+6. **Batch Processing (Optional)** If you have multiple videos to process in batch mode, modify the video_paths list in intent_tracking.py to include multiple video files, then run the script in batch mode.
+
+7. **Visualization** You can set show=True in the intent_tracking.py script to display real-time tracking and prediction results. The processed video with tracking will be saved in the project folder.
+
 
 ## **Files Overview**
 
@@ -96,49 +121,3 @@ The file you are currently reading. Provides an overview of the project and expl
 
 ### **9. `cfgs/`**
 This folder contains configuration files used by the tracking algorithm (e.g., BOTSORT). These configurations define parameters like tracker settings, which are used to track drones in videos.
-
-## **How to Run the Project**
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/RowanMAVRC/IntentCNN
-   cd IntentCNN/
-    ```
-
-2. **Install Dependencies**
-   Make sure you have Python 3.8+ and install the necessary dependencies. It is reccomended to use a python environment manager of your choice (venv, conda, etc.). Make sure your environment is active before running the command below:
-   ```bash
-   pip install -r requirements.txt
-    ```
-
-3. **Download and Prepare Data** 
-  - **Download the Data:** Download the necessary data from [this link](https://drive.google.com/drive/folders/1chhkDlgXcXTwapc9j2JU7MgO1toZ6oF6?usp=drive_link) and place the .zip file in the project directory.
-  - **Unzip the Data:** Unzip the downloaded `.zip` file in the main project directory. This should create a folder named `IntentCNN`.
-  ```bash
-  # Assuming you've downloaded IntentCNN.zip to the project directory
-  unzip IntentCNN.zip
-  ```
-  - **Data Structure:** The `IntentCNN/` folder should contain all the necessary data for training the CNN model, including trajectory data and labels.
-
-4. **Prepare Model Weights**
-  - **Detection Model**: The YOLO model weights for drone detection are inside the `IntentCNN` folder under the file name `detection.pt`
-  - **Intent Model**: 
-    - If you have a pre-trained CNN model, place the weights in the `IntentCNN/` directory.
-    - If not, proceed to the next step to train the CNN model.
-
-5. **Train the CNN Model**
-Before running the detection and tracking script, you need to train the CNN model using the data in the `IntentCNN/` folder.
-```bash
-python cnn_main.py --data_path IntentCNN/Useable/XY/800pad_66 --num_epochs 50 --batch_size 32
-```
-  - Replace `50` with the desired number of epochs.
-  - Replace `32` with the desired batch size.
-
-6. **Run the Tracking and Intention Prediction Script** Use the following command to run the intention tracking on a sample video:
-  ```bash
-  python tracking_w_intent.py
-  ```
-
-6. **Batch Processing (Optional)** If you have multiple videos to process in batch mode, modify the video_paths list in intent_tracking.py to include multiple video files, then run the script in batch mode.
-
-7. **Visualization** You can set show=True in the intent_tracking.py script to display real-time tracking and prediction results. The processed video with tracking will be saved in the project folder.

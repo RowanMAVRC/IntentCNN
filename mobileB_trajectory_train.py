@@ -14,7 +14,6 @@ prepared by converting the trajectories into a text-like format suitable for BER
 arguments, leveraging a Trainer object for efficient training and evaluation. Accuracy is used as the evaluation metric.
 The script concludes by demonstrating inference on a new trajectory, showcasing the end-to-end process.
 """
-
 # ------------------------------------------------------------------------------------- #
 # Imports
 # ------------------------------------------------------------------------------------- #
@@ -45,14 +44,13 @@ import evaluate
 from datasets import Dataset, DatasetDict
 
 # Custom file imports
-from data_tools.chart_generator import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
-from data_tools.normalization import (
+# from data_tools.chart_generator import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
+from tools.normalization import (
     z_score_standardization_all, z_score_standardization_single, 
     mean_removed_all, mean_removed_single,
     compute_trajectory_stats,
-    normalize
 )
-from data_tools.augmentations import flip_trajectories_x, augment_with_jitters
+from tools.augmentations import flip_trajectories_x, augment_with_jitters
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -83,7 +81,8 @@ def load_flight_data(data_path: str, labels_path: str, label_detailed_path: str,
     # Load trajectory data
     trajectory_files = [os.path.join(data_path, f) for f in os.listdir(data_path) if f.endswith('.pt')]
     train_trajectories = [torch.load(f).numpy() for f in trajectory_files]
-    train_trajectories = np.array(train_trajectories)
+    train_trajectories = pad_or_truncate_trajectories(train_trajectories, max_length=800)
+    # train_trajectories = np.array(train_trajectories)
 
     first_points = [traj[0].copy() for traj in train_trajectories]
     remaining_trajectories = [traj[1:] for traj in train_trajectories]
@@ -91,7 +90,7 @@ def load_flight_data(data_path: str, labels_path: str, label_detailed_path: str,
     train_labels = [int(traj[0][0]) for traj in remaining_trajectories]
     remaining_trajectories = np.delete(np.array(remaining_trajectories), 0, axis=2)
 
-    normalized_trajectories = normalize(remaining_trajectories)
+    normalized_trajectories = remaining_trajectories
     mean_removed_trajectories = mean_removed_all(normalized_trajectories)
     
     if augment:
@@ -113,6 +112,7 @@ def load_flight_data(data_path: str, labels_path: str, label_detailed_path: str,
         id2label_detailed = yaml.safe_load(stream)
 
     return train_trajectories, train_labels, id2label, label2id, id2label_detailed
+
 
 def preprocess_function(examples):
     """
@@ -148,6 +148,7 @@ def preprocess_function(examples):
 
     return tokenizer(trajectories_str, padding="max_length", truncation=True, max_length=512, return_tensors="pt")
 
+
 def compute_metrics(eval_pred):
     """
     Computes the accuracy of the model's predictions.
@@ -162,6 +163,28 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(logits, axis=-1)
     return {"accuracy": (predictions == labels).mean()}
 
+
+def pad_or_truncate_trajectories(trajectories, max_length):
+    """
+    Pads or truncates a list of trajectories to ensure uniform length.
+
+    Args:
+        trajectories (list): List of trajectories, where each trajectory is a NumPy array.
+        max_length (int): Desired fixed length for all trajectories.
+
+    Returns:
+        np.ndarray: Array of uniformly shaped trajectories.
+    """
+    padded_trajectories = []
+    for traj in trajectories:
+        if len(traj) > max_length:
+            padded_traj = traj[:max_length]  # Truncate if longer
+        else:
+            padding = np.zeros((max_length - len(traj), traj.shape[1]))  # Pad if shorter
+            padded_traj = np.vstack((traj, padding))
+        padded_trajectories.append(padded_traj)
+    return np.array(padded_trajectories)
+
 # ------------------------------------------------------------------------------------- #
 # Main
 # ------------------------------------------------------------------------------------- #
@@ -173,7 +196,7 @@ if __name__ == "__main__":
     if debug:
         data_path = "IntentCNN/Useable/XYZ/800pad_66" 
         labels_path = "IntentCNN/Useable/intent_labels.yaml"
-        label_detailed_path = "/data/TGSSE/UpdatedIntentions/XYZ/800pad_66/trajectory_with_intentions_800_pad_533_min_151221_label_detailed.yaml"
+        label_detailed_path = "IntentCNN/detect_labels.yaml"
         num_train_epochs = 75
         learning_rate = 1e-3
         per_device_eval_batch_size = 8
@@ -187,7 +210,7 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='Flight Trajectory Classification')
         parser.add_argument('--data_path', type=str, help='Path to trajectory data (.pt files)')
         parser.add_argument('--labels_path', type=str, help='Path to labels data (.yaml)')
-        parser.add_argument('--label_detailed_path', type=str, help='Path to detailed labels data (.yaml)')
+        parser.add_argument('--label_detailed_path', type=str, default="IntentCNN/detect_labels.yaml", help='Path to detailed labels data (.yaml)')
         parser.add_argument('--num_train_epochs', type=int, default=75, help='Number of training epochs')
         parser.add_argument('--learning_rate', type=float, default=1e-3, help='Learning rate')
         parser.add_argument('--per_device_train_batch_size', type=int, default=8, help='Batch size for training')
@@ -214,7 +237,7 @@ if __name__ == "__main__":
     flight_data, flight_labels, id2label, label2id, id2label_detailed = load_flight_data(data_path, labels_path, label_detailed_path, augment)
     num_labels = len(id2label)
     
-    generate_histogram_and_pie_chart(flight_labels, id2label, f'Overall_{run_name}_{augment}')
+    # generate_histogram_and_pie_chart(flight_labels, id2label, f'Overall_{run_name}_{augment}')
     
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
     
@@ -227,9 +250,9 @@ if __name__ == "__main__":
         train_trajectories, val_trajectories = flight_data[train_index], flight_data[val_index]
         train_labels, val_labels = np.array(flight_labels)[train_index], np.array(flight_labels)[val_index]
         
-        generate_histogram_and_pie_chart_for_split(train_labels, val_labels, id2label, f'{run_name}_Fold{fold_idx}')
-        wandb.log({"Overall Distribution": wandb.Image(f'graphs/Overall_{run_name}_{augment}_overall_distribution.png')})
-        wandb.log({"Split Distribution": wandb.Image(f'graphs/{run_name}_Fold{fold_idx}_split_distribution.png')})
+        # generate_histogram_and_pie_chart_for_split(train_labels, val_labels, id2label, f'{run_name}_Fold{fold_idx}')
+        # wandb.log({"Overall Distribution": wandb.Image(f'graphs/Overall_{run_name}_{augment}_overall_distribution.png')})
+        # wandb.log({"Split Distribution": wandb.Image(f'graphs/{run_name}_Fold{fold_idx}_split_distribution.png')})
         
         train_ds = Dataset.from_dict({"trajectory": train_trajectories.tolist(), "labels": train_labels})
         val_ds = Dataset.from_dict({"trajectory": val_trajectories.tolist(), "labels": val_labels})

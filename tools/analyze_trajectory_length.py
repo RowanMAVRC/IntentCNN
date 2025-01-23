@@ -19,10 +19,20 @@ and plots the statistics for each intention group. It also saves the plot as a P
 7. Print a summary of the statistics including overall statistics and statistics by intention group.
 
 """
+# ------------------------------------------------------------------------------------- #
+# Imports
+# ------------------------------------------------------------------------------------- #
 
+# Standard library imports
 import os
 import pickle
+
+# Third-party imports
 import matplotlib.pyplot as plt
+
+# ------------------------------------------------------------------------------------- #
+# Functions
+# ------------------------------------------------------------------------------------- #
 
 def load_trajectory_data(file_path):
     """
@@ -38,86 +48,91 @@ def load_trajectory_data(file_path):
         sequences = pickle.load(handle)
     return sequences
 
-# Define the path to the data file
-data_path = "/data/TGSSE/SimData_2024-03-17__11-53-42_Optical/trajectory/trajectories_with_intentions.pickle"
+# ------------------------------------------------------------------------------------- #
+# Main
+# ------------------------------------------------------------------------------------- #
 
-# Load trajectory data from the pickle file
-sequences = load_trajectory_data(data_path)
+if __name__ == "__main__":
+    # Define the path to the data file
+    data_path = "IntentCNN/Segmented/095823.pickle"
 
-# Calculate overall statistics for all trajectories
-sequence_lengths_all = [len(trajectory) for key in sequences.keys() for trajectory in sequences[key]]
+    # Load trajectory data from the pickle file
+    sequences = load_trajectory_data(data_path)
 
-# Compute overall statistics
-longest_sequence_all = max(sequence_lengths_all)  # Longest sequence length
-shortest_sequence_all = min(sequence_lengths_all)  # Shortest sequence length
-average_sequence_length_all = sum(sequence_lengths_all) / len(sequence_lengths_all)  # Average sequence length
+    # Calculate overall statistics for all trajectories
+    sequence_lengths_all = [len(trajectory) for key in sequences.keys() for trajectory in sequences[key]]
 
-# Calculate statistics for each intention group
-intention_stats = {}
-for key, seq_list in sequences.items():
-    intention = key[1]  # Extract the intention type from the key
-    seq_lengths = [len(seq) for seq in seq_list]  # Lengths of all sequences in the group
-    longest_seq = max(seq_lengths)  # Longest sequence in the group
-    shortest_seq = min(seq_lengths)  # Shortest sequence in the group
-    avg_seq_length = sum(seq_lengths) / len(seq_lengths)  # Average sequence length in the group
-    # Store the statistics for each intention group
-    intention_stats[intention] = {
-        'longest': longest_seq,
-        'shortest': shortest_seq,
-        'average': avg_seq_length
-    }
+    # Compute overall statistics
+    longest_sequence_all = max(sequence_lengths_all)  # Longest sequence length
+    shortest_sequence_all = min(sequence_lengths_all)  # Shortest sequence length
+    average_sequence_length_all = sum(sequence_lengths_all) / len(sequence_lengths_all)  # Average sequence length
 
-# Extract the base name of the input file
-input_file_name = os.path.basename(data_path)
+    # Calculate statistics for each intention group
+    intention_stats = {}
+    for key, seq_list in sequences.items():
+        intention = key[1]  # Extract the intention type from the key
+        seq_lengths = [len(seq) for seq in seq_list]  # Lengths of all sequences in the group
+        longest_seq = max(seq_lengths)  # Longest sequence in the group
+        shortest_seq = min(seq_lengths)  # Shortest sequence in the group
+        avg_seq_length = sum(seq_lengths) / len(seq_lengths)  # Average sequence length in the group
+        # Store the statistics for each intention group
+        intention_stats[intention] = {
+            'longest': longest_seq,
+            'shortest': shortest_seq,
+            'average': avg_seq_length
+        }
 
-# Plotting
-plt.figure(figsize=(10, 6))
+    # Extract the base name of the input file
+    input_file_name = os.path.basename(data_path)
 
-# Plot statistics for each intention group
-intention_labels = list(intention_stats.keys())  # List of intention group labels
-longest_values = [intention_stats[intention]['longest'] for intention in intention_labels]  # Longest sequence per group
-shortest_values = [intention_stats[intention]['shortest'] for intention in intention_labels]  # Shortest sequence per group
-average_values = [intention_stats[intention]['average'] for intention in intention_labels]  # Average sequence per group
+    # Plotting
+    plt.figure(figsize=(10, 6))
 
-bar_width = 0.2  # Width of the bars in the plot
-index = range(len(intention_labels))  # Index for the bars
-plt.bar([i - bar_width for i in index], longest_values, bar_width, color='orange', label='Longest')  # Longest bars
-plt.bar(index, shortest_values, bar_width, color='green', label='Shortest')  # Shortest bars
-plt.bar([i + bar_width for i in index], average_values, bar_width, color='red', label='Average')  # Average bars
+    # Plot statistics for each intention group
+    intention_labels = list(intention_stats.keys())  # List of intention group labels
+    longest_values = [intention_stats[intention]['longest'] for intention in intention_labels]  # Longest sequence per group
+    shortest_values = [intention_stats[intention]['shortest'] for intention in intention_labels]  # Shortest sequence per group
+    average_values = [intention_stats[intention]['average'] for intention in intention_labels]  # Average sequence per group
 
-# Annotate each bar with its value
-for i, v in enumerate(longest_values):
-    plt.text(i - bar_width, v + 0.1, str(v), ha='center', va='bottom')
-for i, v in enumerate(shortest_values):
-    plt.text(i, v + 0.1, str(v), ha='center', va='bottom')
-for i, v in enumerate(average_values):
-    plt.text(i + bar_width, v + 0.1, str(round(v, 2)), ha='center', va='bottom')
+    bar_width = 0.2  # Width of the bars in the plot
+    index = range(len(intention_labels))  # Index for the bars
+    plt.bar([i - bar_width for i in index], longest_values, bar_width, color='orange', label='Longest')  # Longest bars
+    plt.bar(index, shortest_values, bar_width, color='green', label='Shortest')  # Shortest bars
+    plt.bar([i + bar_width for i in index], average_values, bar_width, color='red', label='Average')  # Average bars
 
-# Annotate the plot with the input file name
-plt.text(0.5, -0.12, f'Input File: {input_file_name}', transform=plt.gca().transAxes, fontsize=10, ha='center')
+    # Annotate each bar with its value
+    for i, v in enumerate(longest_values):
+        plt.text(i - bar_width, v + 0.1, str(v), ha='center', va='bottom')
+    for i, v in enumerate(shortest_values):
+        plt.text(i, v + 0.1, str(v), ha='center', va='bottom')
+    for i, v in enumerate(average_values):
+        plt.text(i + bar_width, v + 0.1, str(round(v, 2)), ha='center', va='bottom')
 
-# Add labels and title to the plot
-plt.xlabel('Intention Groups')
-plt.ylabel('Sequence Length')
-plt.title('Sequence Length Statistics by Intention Group')
-plt.xticks(index, intention_labels)  # Set intention group labels on x-axis
-plt.legend()  # Show the legend
+    # Annotate the plot with the input file name
+    plt.text(0.5, -0.12, f'Input File: {input_file_name}', transform=plt.gca().transAxes, fontsize=10, ha='center')
 
-# Save the chart to a file
-output_file = 'graphs/sequence_statistics.png'
-plt.savefig(output_file)
+    # Add labels and title to the plot
+    plt.xlabel('Intention Groups')
+    plt.ylabel('Sequence Length')
+    plt.title('Sequence Length Statistics by Intention Group')
+    plt.xticks(index, intention_labels)  # Set intention group labels on x-axis
+    plt.legend()  # Show the legend
 
-# Summary of statistics
-print("Overall Statistics:")
-print(f"Longest Sequence Length: {longest_sequence_all}")
-print(f"Shortest Sequence Length: {shortest_sequence_all}")
-print(f"Average Sequence Length: {average_sequence_length_all:.2f}")
+    # Save the chart to a file
+    output_file = 'graphs/sequence_statistics.png'
+    plt.savefig(output_file)
 
-print("\nStatistics by Intention Group:")
-for intention, stats in intention_stats.items():
-    print(f"\nIntention: {intention}")
-    print(f"Longest Sequence Length: {stats['longest']}")
-    print(f"Shortest Sequence Length: {stats['shortest']}")
-    print(f"Average Sequence Length: {stats['average']:.2f}")
+    # Summary of statistics
+    print("Overall Statistics:")
+    print(f"Longest Sequence Length: {longest_sequence_all}")
+    print(f"Shortest Sequence Length: {shortest_sequence_all}")
+    print(f"Average Sequence Length: {average_sequence_length_all:.2f}")
 
-print(f"\nSequence statistics saved to {output_file}")
+    print("\nStatistics by Intention Group:")
+    for intention, stats in intention_stats.items():
+        print(f"\nIntention: {intention}")
+        print(f"Longest Sequence Length: {stats['longest']}")
+        print(f"Shortest Sequence Length: {stats['shortest']}")
+        print(f"Average Sequence Length: {stats['average']:.2f}")
+
+    print(f"\nSequence statistics saved to {output_file}")

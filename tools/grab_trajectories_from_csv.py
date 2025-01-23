@@ -4,7 +4,7 @@
 | \  / |  /  \ \  / /| |__) | |     
 | |\/| | / /\ \ \/ / |  _  /| |     
 | |  | |/ ____ \  /  | | \ \| |____ 
-|_|  |_/_/    \_\/   |_|  \_\\_____|
+|_|  |_/_/    \_\/   |_|  \_\______|
 
 
 Python Script to Convert CSV and MP4 files to Trajectories
@@ -76,6 +76,7 @@ def find_matching_pairs(data_path):
                 break
 
     return pairs
+
 
 def process_video_data(data_path: str, save_path: str) -> dict:
     """
@@ -153,6 +154,7 @@ def process_video_data(data_path: str, save_path: str) -> dict:
     print(f"Sequences saved to {save_path}")
     
     return sequences
+
 
 def plot_sequence_statistics(sequences: dict, data_path: str, 
                              output_file: str='graphs/sequence_statistics.png') -> None:

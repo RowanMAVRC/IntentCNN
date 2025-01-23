@@ -18,9 +18,8 @@ from tqdm import tqdm
 from ultralytics import YOLO
 
 # Local module imports
-from src.intentCNN import load_model, predict, MultiHeadCNNModel
+from intentCNN import load_model, predict, MultiHeadCNNModel
 from tools.normalization import normalize_single, mean_removed_single
-
 
 # ------------------------------------------------------------------------------------- #
 # Functions
@@ -46,6 +45,7 @@ def get_output_path(video_path):
         output_path = f"{base_name}_run{run_number}{extension}"
     return output_path
 
+
 def calculate_distance(coord1, coord2):
     """
     Calculate the Euclidean distance between two sets of coordinates.
@@ -62,6 +62,7 @@ def calculate_distance(coord1, coord2):
     centroid1 = ((x1 + x2) / 2, (y1 + y2) / 2)
     centroid2 = ((x3 + x4) / 2, (y3 + y4) / 2)
     return np.sqrt((centroid1[0] - centroid2[0])**2 + (centroid1[1] - centroid2[1])**2)
+
 
 def load_labels(label_path):
     """
@@ -82,6 +83,7 @@ def load_labels(label_path):
 
     return id2label, label2id
 
+
 def initialize_video_writer(video_path, output_path):
     """
     Initialize video writer for saving the output video.
@@ -99,6 +101,7 @@ def initialize_video_writer(video_path, output_path):
     input_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     output = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), input_fps, (input_width, input_height))
     return cap, output, input_fps, input_width, input_height
+
 
 def process_frame(frame, detect_model, tracker_path, cfg_path, verbose, device):
     """
@@ -129,6 +132,7 @@ def process_frame(frame, detect_model, tracker_path, cfg_path, verbose, device):
     track_classes = results[0].boxes.cls.int().cpu().tolist() if results[0].boxes.id is not None else []
     annotated_frame = results[0].plot(probs=False, conf=False)
     return boxes, boxesXYXY, track_ids, track_classes, annotated_frame
+
 
 def intention_tracking(detect_path, intent_path, video_path, label_path, tracker_path, cfg_path, dimensions=2, **kwargs):
     """
@@ -179,11 +183,13 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, tracker
         detect_model = YOLO(detect_path)
         id2label, label2id = load_labels(label_path)
 
+        device = kwargs.get("device", "cuda:1")
+
         intent_model = load_model(
             MultiHeadCNNModel, 
             intent_path, 
             dimensions, 
-            device="cuda:1", 
+            device=device, 
             heads_info=heads_info
         )
 
@@ -197,7 +203,6 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, tracker
             dimensions = 2
 
         verbose = kwargs.get("verbose", False)
-        device = kwargs.get("device", "cuda:1")
         show = kwargs.get("show", False)
         plot_tracks = kwargs.get("plot_tracks", True)
         num_track_frames = kwargs.get("num_track_frames", 90)
@@ -311,8 +316,8 @@ if __name__ == "__main__":
     device = "cuda:1"
 
     # Path configurations
-    detect_path         = "IntentCNN/detection.pt"
-    intent_path         = "IntentCNN/intention.pth"
+    detect_path         = "IntentCNN/Weights/detection_models"
+    intent_path         = "IntentCNN/Weights/intention_models/multitask_cnn/fold_1_task_0.pth"
     label_path          = "IntentCNN/intent_labels.yaml"
     tracker_path        = "cfgs/tracking/trackers/botsort_90.yaml"
     cfg_path            = "cfgs/tracking/botsort.yaml"

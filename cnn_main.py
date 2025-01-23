@@ -18,16 +18,19 @@ running inference.
 # Imports
 # ------------------------------------------------------------------------------------- #
 
+# Standard library imports
 import argparse
 import time
 
+# Third-party imports
 import numpy as np
 import torch
 import wandb
 from sklearn.model_selection import KFold
 
+# Custom file imports
 from tools.load_data import load_flight_data_single
-from src.intentCNN import train_cnn, inference, prepare_dataloader
+from intentCNN import train_cnn, inference, prepare_dataloader
 from tools.utils import generate_histogram_and_pie_chart, generate_histogram_and_pie_chart_for_split
 
 # ------------------------------------------------------------------------------------- #

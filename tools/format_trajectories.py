@@ -1,12 +1,23 @@
+"""
+ _____       _             _                           
+|_   _|     | |           | |    ____  _   _  _   _                           
+  | |  _ __ | |_ ___ _ __ | |_  / ___|| \ | || \ | |
+  | | | '_ \| __/ _ \ '_ \| __|| |   ||  \| ||  \| |
+ _| |_| | | | ||  __/ | | | |_ | |___|| |\  || |\  |
+|_____|_| |_|\__\___|_| |_|\__| \____||_| \_||_| \_|
+"""
 #-----------------------------------------------------------------------------#
 # Imports
 #-----------------------------------------------------------------------------#
 
+# Standard library imports
 import os
 import zipfile
 import pickle
 import torch
 import yaml
+
+# Third-party imports
 import matplotlib.pyplot as plt
 
 #-----------------------------------------------------------------------------#
@@ -55,6 +66,7 @@ def plot_padding_statistics(padding_stats, data_file_path, max_length, min_lengt
         # Save plot to folder
         save_path = f'{folder_path}/{max_length}_{min_length}.png'
         plt.savefig(save_path)
+
 
 def calculate_padding_statistics(sequences, max_length, min_length, data_file_path, save_signature):
     """
@@ -113,6 +125,7 @@ def calculate_padding_statistics(sequences, max_length, min_length, data_file_pa
     plot_padding_statistics(padding_stats, data_file_path, max_length, min_length, save_signature)
     
     return padding_stats
+        
         
 def process_trajectories(data_file_path, save_signature, dimensions=3, max_length=100, min_factor=2/3):
     """

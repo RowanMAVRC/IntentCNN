@@ -62,7 +62,7 @@ This project is a comprehensive solution for detecting, tracking, and classifyin
 This file contains the main script for training the CNN model that is used for classifying drone intentions. Before running the detection and tracking script, you should first train the CNN model using this file.
 **How to run:** To train the model, execute the following command: 
 ```bash
-python src/cnn_main.py --data_path <path_to_data> --epochs <number_of_epochs> --batch_size <batch_size> --save_model_path <path_to_save_model>
+python cnn_main.py --data_path <path_to_data> --epochs <number_of_epochs> --batch_size <batch_size> --save_model_path <path_to_save_model>
 ```
 Ensure you have the necessary trajectory data in the `IntentCNN/` folder as mentioned earlier.
 
@@ -91,7 +91,7 @@ python tracking_w_intent.py --detect_path <path_to_detection_model> --intent_pat
 This is an accessory script that trains a CNN model using MobileBERT for trajectory-based classification. While it’s not part of the primary workflow, it can be used as an additional tool if needed.
 **How to run:** You can execute this script separately if you wish to experiment with MobileBERT for trajectory prediction:
 ```bash
-python src/mobileB_trajectory_train.py --data_path <path_to_data> --epochs <number_of_epochs> --batch_size <batch_size> --save_model_path <path_to_save_model>
+python mobileB_trajectory_train.py --data_path <path_to_data> --epochs <number_of_epochs> --batch_size <batch_size> --save_model_path <path_to_save_model>
 ```
 
 ### **5. `tools/normalization.py`**
@@ -121,3 +121,20 @@ The file you are currently reading. Provides an overview of the project and expl
 
 ### **9. `cfgs/`**
 This folder contains configuration files used by the tracking algorithm (e.g., BOTSORT). These configurations define parameters like tracker settings, which are used to track drones in videos.
+
+### **10. `tools/grab_trajectories_from_csv.py`**
+This Python script is designed to convert CSV and MP4 files into labeled drone trajectory sequences. It aligns video frames with their corresponding labels, organizes them into sequences by drone ID and intention, and saves the processed data for further analysis or training machine learning models.
+- Finding Matching Files: The script identifies pairs of CSV files (containing labels) and MP4 files (containing videos) by matching their base filenames within the specified data directory.
+- Processing Video Data: Each video is read frame by frame, and the corresponding labels are extracted from the matching CSV file. Labels include details like drone ID, intention, coordinates, and depth. Frames with the same drone ID and intention are grouped into sequences.
+- Sequence Merging: Sequences from multiple files are merged into a global dictionary, organized by drone ID and intention.
+- Statistics Calculation: The script calculates sequence length statistics for all intentions, including the longest, shortest, and average sequence lengths.
+- Saving Results: The sequences are saved in a .pickle file for easy loading in future tasks. A bar chart of sequence statistics is generated and saved as a .png file.
+
+### **11. `tools/format_trajectories.py`**
+This script processes trajectory data from .pickle files, adjusts them for length consistency, and saves the formatted data for further analysis or training machine learning models.
+- Trajectory Padding and Adjustment: The script ensures all trajectory sequences have a consistent length (max_length) by adding padding where necessary. Sequences shorter than a minimum length (min_length, derived from min_factor) are excluded.
+- Padding Statistics: The script calculates and records padding statistics for each trajectory intention group. These include total padding, average padding per chunk, and the number of trajectory chunks.
+- Label Mapping: Trajectories are categorized by drone type (ROTARY or FIXEDWING) and intention, with mappings created for string-to-number conversion (str2num and num2str) to facilitate tensor representation.
+- Dimensionality Options: The script supports 2D (XY coordinates) and 3D (XYZ coordinates with depth) trajectory formats, determined by the dimensions parameter.
+- Saving Outputs: The processed trajectories are saved as PyTorch .pt tensor files, along with YAML files containing label mappings for easy lookup.
+- Visualization: A bar chart of padding statistics is generated for each processed file, showing the number of trajectories, total padding, and average padding per intention group.

@@ -53,19 +53,20 @@ class CNNModel(nn.Module):
     def forward(self, x):
         """
         Forward pass of the CNN model.
-
+        
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, seq_len, input_dim).
-
+        
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, output_dim).
         """
-        x = x.permute(0, 2, 1)  # Change shape to (batch_size, input_dim, seq_len)
-        x = torch.relu(self.conv1(x))  # Apply first convolution and ReLU
-        x = torch.relu(self.conv2(x))  # Apply second convolution and ReLU
-        x = torch.max(x, dim=2)[0]  # Global max pooling
-        x = self.dropout(x)  # Apply dropout
-        x = self.fc(x)  # Apply fully connected layer
+        if x.dim() == 3 and x.shape[2] == self.conv1.in_channels:
+            x = x.permute(0, 2, 1) 
+        x = torch.relu(self.conv1(x))
+        x = torch.relu(self.conv2(x))
+        x = torch.max(x, dim=2)[0]
+        x = self.dropout(x)
+        x = self.fc(x)
         return x
     
     
@@ -81,12 +82,9 @@ class MultiHeadCNNModel(nn.Module):
     """
     def __init__(self, input_dim, heads_info, kernel_size=8):
         super(MultiHeadCNNModel, self).__init__()
-        # Shared convolutional layers
         self.conv1 = nn.Conv1d(input_dim, 64, kernel_size=kernel_size, padding=1)
         self.conv2 = nn.Conv1d(64, 128, kernel_size=kernel_size, padding=1)
         self.dropout = nn.Dropout(0.5)
-        
-        # Create a dictionary of fully connected layers for each aircraft
         self.heads_info = heads_info
         self.heads = nn.ModuleDict({
             aircraft: nn.Linear(128, num_classes) for aircraft, num_classes in heads_info.items()
@@ -95,20 +93,21 @@ class MultiHeadCNNModel(nn.Module):
     def forward(self, x, aircraft_id):
         """
         Forward pass of the Multi-Head CNN model.
-
+        
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, seq_len, input_dim).
             aircraft_id (str): Aircraft identifier to select the appropriate classification head.
-
+        
         Returns:
             torch.Tensor: Output tensor from the selected head.
         """
-        x = x.permute(0, 2, 1)  # Change shape to (batch_size, input_dim, seq_len)
-        x = F.relu(self.conv1(x))  # Apply first convolution and ReLU
-        x = F.relu(self.conv2(x))  # Apply second convolution and ReLU
-        x = torch.max(x, dim=2)[0]  # Global max pooling
-        x = self.dropout(x)  # Apply dropout
-        output = self.heads[aircraft_id](x)  # Apply the specific fully connected layer for the aircraft
+        if x.dim() == 3 and x.shape[2] == self.conv1.in_channels:
+            x = x.permute(0, 2, 1)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = torch.max(x, dim=2)[0]
+        x = self.dropout(x)
+        output = self.heads[aircraft_id](x)
         return output
 
 # ------------------------------------------------------------------------------------- #
@@ -128,11 +127,12 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         num_epochs (int): Number of training epochs.
         fold (int): Current fold number for cross-validation.
         device (torch.device): The device to run the training on.
+        id2label (dict): Mapping from id to label.
+        global2local_label_map (dict): Mapping from global to local label space.
 
     Returns:
         nn.Module: Trained model.
     """
-
     with tqdm(total=num_epochs, desc=f"Training Fold {fold}") as pbar:
         for epoch in range(num_epochs):
             model.train()  # Set model to training mode
@@ -145,16 +145,19 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                     "ROTARY"    : ~((labels == 0) | (labels == 1))
                 }
 
-
                 optimizer.zero_grad()  # Reset gradients
                 loss = 0
                 for i, aircraft_id in enumerate(model.heads_info.keys()):
+                    if masks[aircraft_id].sum() == 0:
+                        continue
                     local_labels = torch.tensor(
                         [global2local_label_map[label.item()] for label in labels[masks[aircraft_id]]], 
                         device=labels.device,
                         dtype=torch.long  # Ensure local_labels are of type Long
                     )
-                 
+                    if (local_labels < 0).any():
+                        raise ValueError(f"Unmapped labels found in {aircraft_id} local label mapping.")
+                    
                     outputs = model(inputs[masks[aircraft_id]], aircraft_id)  # Forward pass for each aircraft
                     loss += criterion(outputs, local_labels)  # Compute loss
                
@@ -324,7 +327,7 @@ def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fo
         'FIXEDWING': 2,
         'ROTARY': 3,
     }
-    model = MultiHeadCNNModel(input_dim=2, heads_info=heads_info).to(device)
+    model = MultiHeadCNNModel(input_dim=input_dim, heads_info=heads_info).to(device)
 
     criterion = nn.CrossEntropyLoss(reduction="sum")
     optimizer = optim.Adam(model.parameters(), lr=lr)

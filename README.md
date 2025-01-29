@@ -124,17 +124,17 @@ This folder contains configuration files used by the tracking algorithm (e.g., B
 
 ### **10. `tools/grab_trajectories_from_csv.py`**
 This Python script is designed to convert CSV and MP4 files into labeled drone trajectory sequences. It aligns video frames with their corresponding labels, organizes them into sequences by drone ID and intention, and saves the processed data for further analysis or training machine learning models.
-- Finding Matching Files: The script identifies pairs of CSV files (containing labels) and MP4 files (containing videos) by matching their base filenames within the specified data directory.
-- Processing Video Data: Each video is read frame by frame, and the corresponding labels are extracted from the matching CSV file. Labels include details like drone ID, intention, coordinates, and depth. Frames with the same drone ID and intention are grouped into sequences.
-- Sequence Merging: Sequences from multiple files are merged into a global dictionary, organized by drone ID and intention.
-- Statistics Calculation: The script calculates sequence length statistics for all intentions, including the longest, shortest, and average sequence lengths.
-- Saving Results: The sequences are saved in a .pickle file for easy loading in future tasks. A bar chart of sequence statistics is generated and saved as a .png file.
+- **Finding Matching Files:** The script identifies pairs of CSV files (containing labels) and MP4 files (containing videos) by matching their base filenames within the specified data directory.
+- **Processing Video Data:** Each video is read frame by frame, and the corresponding labels are extracted from the matching CSV file. Labels include details like drone ID, intention, coordinates, and depth. Frames with the same drone ID and intention are grouped into sequences.
+- **Sequence Merging:** Sequences from multiple files are merged into a global dictionary, organized by drone ID and intention.
+- **Statistics Calculation:** The script calculates sequence length statistics for all intentions, including the longest, shortest, and average sequence lengths.
+- **Saving Results:** The sequences are saved in a .pickle file for easy loading in future tasks. A bar chart of sequence statistics is generated and saved as a .png file.
 
 ### **11. `tools/format_trajectories.py`**
 This script processes trajectory data from .pickle files, adjusts them for length consistency, and saves the formatted data for further analysis or training machine learning models.
-- Trajectory Padding and Adjustment: The script ensures all trajectory sequences have a consistent length (max_length) by adding padding where necessary. Sequences shorter than a minimum length (min_length, derived from min_factor) are excluded.
-- Padding Statistics: The script calculates and records padding statistics for each trajectory intention group. These include total padding, average padding per chunk, and the number of trajectory chunks.
-- Label Mapping: Trajectories are categorized by drone type (ROTARY or FIXEDWING) and intention, with mappings created for string-to-number conversion (str2num and num2str) to facilitate tensor representation.
-- Dimensionality Options: The script supports 2D (XY coordinates) and 3D (XYZ coordinates with depth) trajectory formats, determined by the dimensions parameter.
-- Saving Outputs: The processed trajectories are saved as PyTorch .pt tensor files, along with YAML files containing label mappings for easy lookup.
-- Visualization: A bar chart of padding statistics is generated for each processed file, showing the number of trajectories, total padding, and average padding per intention group.
+- **Trajectory Padding and Adjustment:** The script ensures all trajectory sequences have a consistent length (max_length) by adding padding where necessary. Sequences shorter than a minimum length (min_length, derived from min_factor) are excluded.
+- **Padding Statistics:** The script calculates and records padding statistics for each trajectory intention group. These include total padding, average padding per chunk, and the number of trajectory chunks.
+- **Label Mapping:** Trajectories are categorized by drone type (ROTARY or FIXEDWING) and intention, with mappings created for string-to-number conversion (str2num and num2str) to facilitate tensor representation.
+- **Dimensionality Options:** The script supports 2D (XY coordinates) and 3D (XYZ coordinates with depth) trajectory formats, determined by the dimensions parameter.
+- **Saving Outputs:** The processed trajectories are saved as PyTorch .pt tensor files, along with YAML files containing label mappings for easy lookup.
+- **Visualization:** A bar chart of padding statistics is generated for each processed file, showing the number of trajectories, total padding, and average padding per intention group.

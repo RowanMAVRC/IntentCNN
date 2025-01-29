@@ -75,3 +75,5 @@ nohup python3 cnn_main.py --device "cuda:5" --kernel_size 60 --data_path IntentC
 nohup python3 cnn_main.py --device "cuda:5" --kernel_size 70 --data_path IntentCNN/Useable/XY/800pad_66 --run_name XY800pad66_kernel70 --project_name IntentCNN_XY_KERNEL  > out/800pad66XY_kernel70.out
 
 nohup python3 cnn_main.py --device "cuda:5" --kernel_size 80 --data_path IntentCNN/Useable/XY/800pad_66 --run_name XY800pad66_kernel80 --project_name IntentCNN_XY_KERNEL  > out/800pad66XY_kernel80.out
+
+nohup python3 cnn_main.py --device "cuda:6" --data_path IntentCNN/Useable/XYZ/700pad_33 --run_name XYZ700pad_33 --project_name IntentCNN_XYZ  > out/70033XYZ.out

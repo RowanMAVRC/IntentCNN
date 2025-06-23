@@ -197,7 +197,7 @@ def intention_tracking(detect_path, intent_path, video_path, label_path, tracker
         cap, output, input_fps, input_width, input_height = initialize_video_writer(video_path, output_path)
         
         csv_file = video_path.replace(".mp4", ".csv")
-        frame_data = pd.read_csv(csv_file) if os.path.exists(csv_file) else pd.DataFrame()
+        frame_data = pd.DataFrame()
         if frame_data.empty:
             print(f"CSV file {csv_file} does not exist. Defaulting to intent with XY coordinates only.")
             dimensions = 2
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     label_path          = "IntentCNN/intent_labels.yaml"
     tracker_path        = "cfgs/tracking/trackers/botsort_90.yaml"
     cfg_path            = "cfgs/tracking/botsort.yaml"
-    video_paths         = ["IntentCNN/Raw/DyViR_DS_240408_151221_Optical_6D0A0B0H/DyViR_DS_240408_151221_Optical_6D0A0B0H.mp4"]
+    video_paths         = ["/data/TGSSE/RWclinic/first_dataset_cleaned/aerial_denial/ariel_denial_1/aerial_denial_1.mov"]
 
     # Visualization configurations
     show = False

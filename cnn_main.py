@@ -54,7 +54,7 @@ def parse_arguments():
     parser.add_argument('--project_name', type=str, default='cnn_trajectory_classificationXY', help='Project name for Wandb tracking.')
     parser.add_argument('--run_name', type=str, default='100pad_0', help='Run name for Wandb tracking.')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training.')
-    parser.add_argument('--kernel_size', type=int, default=8, help='Kernel size for CNN model.')
+    parser.add_argument('--kernel_size', type=int, default=12, help='Kernel size for CNN model.')
     parser.add_argument('--device', type=str, default='cuda', help='Device to use for training (e.g., "cuda" or "cpu").')
     return parser.parse_args()
 

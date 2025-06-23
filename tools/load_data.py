@@ -89,6 +89,8 @@ def extract_and_preprocess_trajectories(trajectories, augment, normalization_fun
         train_labels += train_labels
         drone_classes += drone_classes
 
+    print(f"Extracted labels: {set(train_labels)}")
+
     return np.array(mean_removed_trajectories), train_labels, drone_classes
 
 

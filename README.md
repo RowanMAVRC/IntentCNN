@@ -8,6 +8,48 @@ This project is a comprehensive solution for detecting, tracking, and classifyin
 - **Intention Prediction:** Based on drone trajectories, a multi-head CNN predicts the intention of drones (Recon, Kamikaze, Area Denial, etc.).
 - **Visualization:** The system can visualize drone trajectories and predicted intentions on video frames.
 
+## **Project Visualizations**
+
+### 🧠 Cognitive Offloading Dynamics
+![Cognitive Offloading](graphics/cog_offloading.png)  
+**Figure 1:** *Cognitive offloading as a function of normalized threat threshold. 0 indicates all objects are notified to the user, while 1 indicates none are notified as threats. Threat levels are normalized by the maximum in the video.*
+
+---
+
+### 📽️ Intention Prediction Pipeline
+![Pipeline Overview](graphics/pipeline.png)  
+**Figure 2:** *This framework processes a video feed using object detection to localize and classify objects. These objects are tracked across frames to generate tracklets, which, along with class information, are used to determine the intention of each drone. Based on the detected class and inferred intention, the system retrieves the severity score (bounded between 0 and 1) and computes the probability of interaction using the tracklets. The threat level is determined as the product of severity and probability. In this example, the three highest priority threats, all kamikaze attacks directed at us, are marked in red, while the other drones, engaged in reconnaissance, are marked in white.*
+
+---
+
+### 📈 Accuracy vs. Sequence Length
+![Validation Accuracy](graphics/accuracy.png)  
+**Figure 3:** *1D Conv Network's Validation accuracy of 2D data ($x, y$) across different maximum trajectory sequence lengths with varying padding thresholds (PT). A 0% threshold indicates no limit on padding, while a 66% threshold requires at least 66% of the maximum sequence length to be present.*
+
+## **Prerequisites**
+
+Before running the project, ensure you have installed the following dependencies:
+- Python 3.8+
+- CUDA-enabled GPU with PyTorch installed for faster processing (optional but recommended)
+- YOLOv8 for object detection and tracking
+- Various Python libraries such as:
+  - `numpy`
+  - `pandas`
+  - `torch`
+  - `opencv-python`
+  - `tqdm`
+  - `yaml`
+  - `multiprocessing`
+  - `ultralytics` (for YOLO)
+  
+Install the dependencies by running:
+
+```bash
+pip install -r requirements.txt
+```
+
+## **Files Overview**
+
 ## **How to Run the Project**
 
 1. **Clone the Repository**

@@ -166,7 +166,6 @@ tracking_intention.py
 results/
 wandb/
 *.out
-*.png
 *.mp4
 *.pth
 

@@ -43,7 +43,7 @@ class CNNModel(nn.Module):
         output_dim (int): Number of output classes (intentions).
         kernel_size (int, optional): Size of the convolutional kernels. Defaults to 8.
     """
-    def __init__(self, input_dim, output_dim, kernel_size=8):
+    def __init__(self, input_dim, output_dim, kernel_size=2):
         super(CNNModel, self).__init__()
         self.conv1 = nn.Conv1d(input_dim, 64, kernel_size=kernel_size, padding=1)
         self.conv2 = nn.Conv1d(64, 128, kernel_size=kernel_size, padding=1)
@@ -80,7 +80,7 @@ class MultiHeadCNNModel(nn.Module):
                            classes as values for each aircraft.
         kernel_size (int, optional): Size of the convolutional kernels. Defaults to 8.
     """
-    def __init__(self, input_dim, heads_info, kernel_size=8):
+    def __init__(self, input_dim, heads_info, kernel_size=2):
         super(MultiHeadCNNModel, self).__init__()
         self.conv1 = nn.Conv1d(input_dim, 64, kernel_size=kernel_size, padding=1)
         self.conv2 = nn.Conv1d(64, 128, kernel_size=kernel_size, padding=1)
@@ -282,7 +282,7 @@ def prepare_dataloader(trajectories, labels, batch_size=32, shuffle=True):
 
 
 def train_cnn(train_trajectories, train_labels, val_trajectories, val_labels, fold, model_name, 
-              device, id2label, lr=0.001, num_epochs=10, batch_size=32, kernel_size=8,):
+              device, id2label, lr=0.001, num_epochs=10, batch_size=32, kernel_size=6):
     """
     Trains the CNN model with the provided data and cross-validation fold.
 
